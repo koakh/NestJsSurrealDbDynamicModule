@@ -1,6 +1,6 @@
 {
   "name": "@koakh/nestjs-surrealdb",
-  "version": "0.1.13",
+  "version": "0.1.14",
   "description": "SurrealDb NestJs wrapper driver",
   "author": "Mário Monteiro <marioammonteiro@gmail.com>",
   "license": "UNLICENSED",
@@ -20,6 +20,7 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:e2e": "jest --config ./test/jest-e2e.json",
+    "yalc:publish": "npm run build && yalc publish",
     "version:patch": "npm run build && npm version patch && echo 'don`t forget to bump version on consumer apps and run `yarn install --mode=skip-build`'",
     "version:publish": "npm publish"
   },

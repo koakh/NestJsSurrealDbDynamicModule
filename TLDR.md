@@ -7,7 +7,7 @@ $ yarn install --mode=skip-build
 # yarn surreal
 # term2: install local package to start develop
 $ cd packages/app-rst
-# must re-add to prevent missing çocalpackage
+# must re-add to prevent missing local package
 $ yarn add @koakh/nestjs-surrealdb --mode=skip-build
 
 # back

@@ -1,7 +1,8 @@
-import { Inject, Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger } from '@nestjs/common';
+// tslint:disable-next-line:max-line-length
 import { AccessRecordAuth, ActionResult, AnyAuth, default as Auth, ExportOptions, Fill, LiveHandler, MapQueryResult, Patch, PreparedQuery, Prettify, QueryParameters, RecordId, RecordIdRange, ResponseError, RpcResponse, ScopeAuth, StringRecordId, default as Surreal, Table, Uuid } from 'surrealdb';
-import { AppServiceAbstract, UserServiceAbstract } from "./surrealdb.abstracts";
-import { APP_SERVICE, SURREALDB_MODULE_OPTIONS, SURREALDB_MODULE_USER_SERVICE, adminCurrentUser } from './surrealdb.constants';
+import { UserServiceAbstract } from './surrealdb.abstracts';
+import { SURREALDB_MODULE_OPTIONS, SURREALDB_MODULE_USER_SERVICE, adminCurrentUser } from './surrealdb.constants';
 import { SurrealDbModuleOptions } from './surrealdb.interfaces';
 import { RecordId$1, SurrealDbUser as User } from './types';
 
@@ -16,11 +17,14 @@ export class SurrealDbService {
     private readonly userService: UserServiceAbstract,
     // TODO: comment/uncomment to use/hide outside AppServiceAbstract
     // WARN: this is only useful in debug mode, but gives problems in consumer apps, because they don't implement this service, always leave uncomment to prevent issues, and use only for tests in dev env
+    // tslint:disable-next-line:max-line-length
     // Nest can't resolve dependencies of the SurrealDbService (Symbol(SURREALDB_MODULE_OPTIONS), Symbol(SURREALDB_MODULE_USER_SERVICE), ?). Please make sure that the argument Symbol(APP_SERVICE) at index [2] is available in the SurrealDbModule context.
     // @Inject(APP_SERVICE)
     // private readonly appService: AppServiceAbstract,
   ) {
-    this.initSurrealDb();
+    if (!options.initSurrealDb === false) {
+      this.initSurrealDb(options.initSurrealDbThrowError);
+    }
   }
 
   // SurrealDbModuleOptions
@@ -43,10 +47,10 @@ export class SurrealDbService {
 
   // initSurrealDb
 
-  private async initSurrealDb(): Promise<Surreal> {
+  private async initSurrealDb(throwError: boolean = true): Promise<Surreal> {
     this.db = new Surreal();
+    const { url, namespace, database, username, password, userService } = this.options;
     try {
-      const { url, namespace, database, username, password, userService } = this.options;
       // this appear on start of server log, after `[InstanceLoader] ConfigModule dependencies initialize`
       // Logger.log(`url: ${url}, namespace: ${namespace}, database: ${database}, username: ${username}, password: ${password}`, SurrealDbService.name);
       await this.db.connect(url, { namespace, database, auth: { username, password } });
@@ -57,10 +61,14 @@ export class SurrealDbService {
       Logger.verbose(`surrealdb database is ready url: ${url}, namespace: ${namespace}, database: ${database}`, SurrealDbService.name);
       await this.db.ready;
       return this.db;
-    } catch (err) {
-      console.error("Failed to connect to SurrealDB:", err instanceof Error ? err.message : String(err));
+    } catch (error) {
+      // tslint:disable-next-line:no-console
+      Logger.error(`Failed to connect to SurrealDB at url: ${url}, namespace: ${namespace}, database: ${database}: ${error instanceof Error ? error.message : String(error)}`, SurrealDbService.name);
       await this.db.close();
-      throw err;
+      // use false on c3-backend to prevent a crash o app boot
+      if (throwError) {
+        throw error;
+      }
     }
   }
 
@@ -68,7 +76,7 @@ export class SurrealDbService {
 
   /**
    * check if thing exists if passed id with entity, else does nothing
-   * @param thing 
+   * @param thing
    */
   async thingExists(thing: string): Promise<void> {
     if (thing.split(':').length === 2) {
@@ -81,7 +89,7 @@ export class SurrealDbService {
 
   /**
    * generate a RecordId from a string
-   * @param thing 
+   * @param thing
    */
   async recordIdFromStringThing(thing: string): Promise<RecordId | string> {
     if (typeof thing === 'string') {
@@ -278,7 +286,7 @@ export class SurrealDbService {
    * @param thing - The table name or the specific record ID to create.
    * @param data - The document / record data to insert.
    */
-  async create<T extends { [x: string]: unknown; id: RecordId<string> }, U extends T>(thing: string | Table<string>, data?: any): Promise<{ [x: string]: unknown; id: RecordId<string>; }[]> {    
+  async create<T extends { [x: string]: unknown; id: RecordId<string> }, U extends T>(thing: string | Table<string>, data?: any): Promise<{ [x: string]: unknown; id: RecordId<string>; }[]> {
     // NOTE: if use id is tb:id will be object, if id is tb will be array, this will unwrap array and responses always with object
     return await this.db.create<T, U>(thing as string, data);
   }

@@ -50,22 +50,22 @@ import { RestaurantsModule } from './restaurants/restaurants.module';
         },
         // if defined will be always true, or always false, ignoring NODE_ENV
         // debug: false,
-        formatError: (err) => {
+        formatError: (error) => {
           // Don't give the specific errors to the client.
           // if (err.message.startsWith('Database Error: ')) {
           //   return new Error('Internal server error');
           // }
-          if (err.extensions?.code === 'INTERNAL_SERVER_ERROR') {
+          if (error.extensions?.code === 'INTERNAL_SERVER_ERROR') {
             // return an object with message and extensions instead of new Error()
             return {
-              message: err.message,
-              extensions: err.extensions
+              message: error.message,
+              extensions: error.extensions
             };
           }
           // Fallback to returning the original error if it doesn't match the condition
           // Otherwise return the original error. The error can also
           // be manipulated in other ways, as long as it's returned.
-          return err;
+          return error;
         },
       }),
     }),
