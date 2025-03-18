@@ -28,9 +28,9 @@
 
 the main `@koakh/nestjs-surrealdb` nestjs dynamic module (library) locate at  `packages/app-lib`
 
-this is just a simple wrapper on top of [surrealdb.js integration](https://surrealdb.com/docs/integration/libraries/nodejs),
+this is **just a simple wrapper on top** of [surrealdb.js integration](https://surrealdb.com/docs/integration/libraries/nodejs),
 check [github repo](https://github.com/surrealdb/surrealdb.js),
-and don't forget to **star** the project, this "surreal team dreamers" deserve it
+and don't forget to give a **star** to the the project, and integrations, this "surreal dream team" deserve it
 
 ### REST Consumer App
 
