@@ -10,6 +10,7 @@
     - [Fix #2: DataLoader with Arrays ex](#fix-2-dataloader-with-arrays-ex)
   - [npm ERR! need auth This command requires you to be logged in to https://registry.yarnpkg.com/](#npm-err-need-auth-this-command-requires-you-to-be-logged-in-to-httpsregistryyarnpkgcom)
   - [Force Consumer Apps to use AppLib package](#force-consumer-apps-to-use-applib-package)
+  - [Fix: npm error code EINVALIDPACKAGENAME](#fix-npm-error-code-einvalidpackagename)
 
 some other projects and files that help
 
@@ -290,3 +291,25 @@ $ yarn install --mode=skip-build
 $ yarn start:app-rst
 $ yarn start:app-gql
 ```
+
+## Fix: npm error code EINVALIDPACKAGENAME
+
+```shell
+$ npm run version:patch
+v0.1.18
+npm error code EINVALIDPACKAGENAME
+npm error Invalid package name "// in case of error: npm error Unsupported URL Type "workspace:": workspace:^, comment bellow line and use npm version patch" of package "// in case of error: npm error Unsupported URL Type "workspace:": workspace:^, comment bellow line and use npm version patch@": name can only contain URL-friendly characters.
+```
+
+- `packages/app-rst/package.json`
+
+```json
+"dependencies": {
+    "// in case of error: npm error Unsupported URL Type \"workspace:\": workspace:^, remove this line and bellow line and use npm version:patch": "",
+    // "@koakh/nestjs-surrealdb": "workspace:^",
+}
+```
+
+fix removing both lines, 
+
+after this both commands works flawless `version:patch` and `version:publish`

@@ -542,7 +542,7 @@
     rxjs "^7.8.1"
 
 "@koakh/nestjs-surrealdb@file:/home/c3/NestJsSurrealDbDynamicModule/packages/app-lib":
-  version "0.1.14"
+  version "0.1.16"
   resolved "file:packages/app-lib"
   dependencies:
     "@golevelup/nestjs-modules" "0.7.1"
