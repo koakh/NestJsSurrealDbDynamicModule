@@ -20,3 +20,14 @@ $ yarn app-lib:dev
 # term3
 $ yarn start:app-rst
 ```
+
+```shell
+$ yarn app-lib:build
+$ yarn yalc:publish
+```
+
+```shell
+$ cd packages/app-lib
+$ npm run version:patch
+$ npm run version:publish
+```
