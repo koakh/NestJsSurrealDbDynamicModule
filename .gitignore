@@ -14,7 +14,7 @@ nbproject
 .idea
 .project
 .settings
-.vscode
+# .vscode
 composer.lock
 *.sublime-workspace
 *.swp
