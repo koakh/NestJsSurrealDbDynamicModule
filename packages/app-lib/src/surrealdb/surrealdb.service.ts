@@ -22,7 +22,7 @@ export class SurrealDbService {
     // @Inject(APP_SERVICE)
     // private readonly appService: AppServiceAbstract,
   ) {
-    if (!options.initSurrealDb === false) {
+    if (!options.initSurrealDb || !options.initSurrealDb === false) {
       this.initSurrealDb(options.initSurrealDbThrowError);
     }
   }
@@ -56,6 +56,7 @@ export class SurrealDbService {
       await this.db.connect(url, { namespace, database, auth: { username, password } });
       // already defined above
       // await this.db.use({ namespace, database });
+      // in new version surrealdb v2.3.7, this is required
       // await this.db.signin({ username, password });
       // wait for the connection to the database to succeed
       Logger.verbose(`surrealdb database is ready url: ${url}, namespace: ${namespace}, database: ${database}`, SurrealDbService.name);
@@ -118,7 +119,7 @@ export class SurrealDbService {
       prepare?: (connection: Auth) => unknown;
       versionCheck?: boolean;
       versionCheckTimeout?: number;
-    }
+    },
   ): Promise<true> {
     return await this.db.connect(url, opts || this.options);
   }

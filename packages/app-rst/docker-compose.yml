@@ -1,5 +1,3 @@
-version: "3.7"
-
 services:
   nestjs-surrealdb-rest-demo:
     image: koakh/nestjs-surrealdb-rest-demo:1.0.0
@@ -13,21 +11,21 @@ services:
       - nestjs-surrealdb-rest-surrealdb
     ports:
       - 3030:3030
-    environment:
-      SURREALDB_URL: "ws://127.0.0.1:8000/rpc"
-  #   SURREALDB_NAMESPACE: "test"
-  #   SURREALDB_DATABASE: "test"
-  #   SURREALDB_USERNAME: "root"
-  #   SURREALDB_PASSWORD: "root"
-  # command: "node dist/main.js"
+    # environment:
+    #   SURREALDB_URL: "ws://127.0.0.1:8000/rpc"
+    #   SURREALDB_NAMESPACE: "test"
+    #   SURREALDB_DATABASE: "test"
+    #   SURREALDB_USERNAME: "root"
+    #   SURREALDB_PASSWORD: "root"
+    # command: "node dist/main.js"
 
   nestjs-surrealdb-rest-surrealdb:
+    image: surrealdb/surrealdb:v2.3.7
     hostname: surrealdb
     container_name: nestjs-surrealdb-rest-surrealdb
     restart: unless-stopped
-    image: surrealdb/surrealdb:1.0.0-beta.8
     # file:mydb
     command: "start --user root --pass root"
     # uncomment to expose surrealdb port
     ports:
-      - 8001:8000
+      - 8000:8000

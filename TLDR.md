@@ -1,5 +1,5 @@
 # TLDR
-
+## 
 ```shell
 $ git clone https://github.com/koakh/NestJsSurrealDbDynamicModule.git
 $ yarn install --mode=skip-build
@@ -15,8 +15,16 @@ cd ../..
 
 # development environment
 
+# term1
+$ cd packages/app-rst/
+$ yarn surreal:docker
+
+# term2: init database (required for useres postSignUp and postSignIn)
+$ yarn surreal:initdb
+
 # term2
 $ yarn app-lib:dev
+
 # term3
 $ yarn start:app-rst
 ```

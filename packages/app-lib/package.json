@@ -37,13 +37,13 @@
   },
   "bugs": "https://github.com/koakh/NestJsSurrealDbDynamicModule.git",
   "dependencies": {
-    "@golevelup/nestjs-modules": "0.7.2",
+    "@golevelup/nestjs-modules": "0.8.0",
     "@nestjs/config": "4.0.1",
     "babel-core": "6.26.3",
     "class-validator": "0.14.1",
     "rxjs": "7.8.1",
     "surrealdb": "1.1.0",
-    "ts-morph": "25.0.0",
+    "ts-morph": "26.0.0",
     "ws": "8.18.0"
   },
   "// devDependenciesNotUsed": {
@@ -55,13 +55,13 @@
   "devDependencies": {
     "@nestjs/common": "11.0.12",
     "@nestjs/core": "11.0.12",
-    "@types/node": "22.10.0",
+    "@types/node": "24.1.0",
     "@types/ws": "8",
     "nodemon": "3.1.7",
     "prettier": "3.4.0",
     "supertest": "7.0.0",
     "ts-node": "10.9.2",
-    "tsc-watch": "6.3.0",
+    "tsc-watch": "7.1.1",
     "tsconfig-paths": "4.2.0",
     "tslint": "5.20.1",
     "typescript": "5.7.2"

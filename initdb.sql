@@ -1,37 +1,40 @@
-define namespace test;
-define database test;
--- use ns test db test;
+DEFINE NAMESPACE test;
+DEFINE DATABASE test;
 
+-- Define the user table with proper permissions
 -- https://surrealdb.com/docs/surrealql/statements/define/table#defining-permissions
--- define table user schemafull permissions full;
-define table overwrite user schemafull permissions 
+-- https://claude.ai/chat/4abf8c3e-c943-4b03-9ec2-359feb43fd82
+DEFINE TABLE user SCHEMAFULL PERMISSIONS 
   -- this will be used to check permission when we are signin and select all users
-  for select where id = $auth.id or $auth.admin = true,  
-  for create full, 
-  for update, delete where id = $auth.id or $auth.admin = true;
+  FOR SELECT WHERE id = $auth.id OR $auth.admin = true,  
+  FOR CREATE FULL, 
+  FOR UPDATE, DELETE WHERE id = $auth.id OR $auth.admin = true;
 
-define field overwrite username on user type string assert $value != NONE;
-define field overwrite password on user type string assert $value != NONE;
+-- Define fields
+DEFINE FIELD username ON user TYPE string ASSERT $value != NONE;
+DEFINE FIELD password ON user TYPE string ASSERT $value != NONE;
 -- flexible
-define field overwrite settings on user flexible type object default {};
-define field overwrite settings.marketing on user type bool default false;
-define field overwrite tags on user type option<array<string>> default [];
-define index overwrite idx_username on user columns username unique;
+DEFINE FIELD settings ON user TYPE object DEFAULT {};
+DEFINE FIELD settings.marketing ON user TYPE bool DEFAULT false;
+DEFINE FIELD tags ON user TYPE option<array<string>> DEFAULT [];
 
--- defining access in your application
+-- Define unique index
+DEFINE INDEX idx_username ON user COLUMNS username UNIQUE;
+
+-- Define access method for authentication
 -- https://surrealdb.com/docs/sdk/javascript/core/handling-authentication#defining-access-in-your-application
 -- define access method/function
-define access account on database type record
-	signup ( create user set username = $username, password = crypto::argon2::generate($password), settings.marketing = $marketing, tags = $tags )
-	signin ( select * from user where username = $username and crypto::argon2::compare(password, $password) )
-	duration for token 15m, for session 12h;
+DEFINE ACCESS account ON DATABASE TYPE RECORD
+  SIGNUP ( CREATE user SET username = $username, password = crypto::argon2::generate($password), settings.marketing = $marketing, tags = $tags )
+  SIGNIN ( SELECT * FROM user WHERE username = $username AND crypto::argon2::compare(password, $password) )
+  DURATION FOR TOKEN 15m, FOR SESSION 12h;
 
--- info for db;
--- info for table user;
+-- info for user
+INFO FOR TABLE user;
 
--- test functions
+-- Test function
 DEFINE FUNCTION fn::greet($name: string) {
-	RETURN "Hello, " + $name + "!";
+    RETURN "Hello, " + $name + "!";
 };
 -- RETURN fn::greet("Tobie");
 

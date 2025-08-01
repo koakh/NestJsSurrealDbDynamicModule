@@ -38,6 +38,7 @@ Content-Type: {{contentType}}
 // @name getHelloAppModule
 // call surrealDbService.getHelloAppModule()
 
+// TODO: comment/uncomment to use/hide outside AppServiceAbstract
 GET {{uri}}/appservice HTTP/1.1
 Content-Type: {{contentType}}
 
@@ -124,6 +125,7 @@ Content-Type: application/json
 // @name postInfo
 // note: This method returns the record of an authenticated scope user.
 // returns the same as $auth
+// first need to use postSignIn, else response will be blank
 
 POST {{uriSurrealDb}}/info
 Content-Type: application/json
@@ -131,8 +133,8 @@ Content-Type: application/json
 {
 }
 
-### postSignup
-// @name postSignup
+### postSignUp
+// @name postSignUp
 
 POST {{uriSurrealDb}}/signup
 Content-Type: application/json
@@ -156,8 +158,8 @@ Content-Type: application/json
   }
 }
 
-### postSignin
-// @name postSignin
+### postSignIn
+// @name postSignIn
 // https://surrealdb.com/docs/sdk/javascript/methods/signin#example-usage
 
 POST {{uriSurrealDb}}/signin
@@ -173,7 +175,7 @@ Content-Type: application/json
   // account match `DEFINE ACCESS account ON DATABASE...`
   "access": "account",
   "variables": {
-    "username": "mario",
+    "username": "alex",
     "password": "password"
     // this can be used, if used in signin function
     // "tags": ["rust", "golang", "javascript"],
@@ -202,7 +204,7 @@ POST {{uriSurrealDb}}/authenticate
 Content-Type: application/json
 
 {
-  "token": "{{postSignin.response.body.*}}"
+  "token": "{{postSignIn.response.body.*}}"
 }
 
 ### postLet
