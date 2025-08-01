@@ -8,7 +8,7 @@ const callbackSubscribeLive =
   // The callback function takes two arguments: the 'action' and 'result' properties
   (action, result) => {
     // action can be: 'CREATE', 'UPDATE', 'DELETE' or 'CLOSE'
-    if (action === 'CLOSE') return;
+    if (action === 'CLOSE') { return; }
     Logger.log(`subscribeLive action: ${JSON.stringify(action, undefined, 2)}, result: ${JSON.stringify(result, undefined, 2)}`, SurrealDbController.name);
   };
 
@@ -49,17 +49,17 @@ export class SurrealDbController {
   @Post('/signup')
   async signup(@Body() signupDto: SignupDto) {
     // access supported from SurrealDB 2.x onwards
-    let mode = signupDto.access ? { access: signupDto.access } : { access: signupDto.scope };
-    const payload = { ...signupDto, ...mode, }
+    const mode = signupDto.access ? { access: signupDto.access } : { access: signupDto.scope };
+    const payload = { ...signupDto, ...mode };
     // Logger.log(`payload: [${JSON.stringify(payload, undefined, 2)}]`, SurrealDbController.name);
     return await this.surrealDbService.signup(payload);
   }
 
-  // https://surrealdb.com/docs/sdk/javascript/methods/signin#example-usage    
+  // https://surrealdb.com/docs/sdk/javascript/methods/signin#example-usage
   @Post('/signin')
   async signin(@Body() signinDto: SigninDto) {
-    let mode = signinDto.access ? { access: signinDto.access } : { access: signinDto.scope };
-    const payload = { ...signinDto, ...mode, }
+    const mode = signinDto.access ? { access: signinDto.access } : { access: signinDto.scope };
+    const payload = { ...signinDto, ...mode };
     return await this.surrealDbService.signin(payload);
   }
 
@@ -89,7 +89,7 @@ export class SurrealDbController {
       // The callback function takes two arguments: the 'action' and 'result' properties
       (action, result) => {
         // action can be: 'CREATE', 'UPDATE', 'DELETE' or 'CLOSE'
-        if (action === 'CLOSE') return;
+        if (action === 'CLOSE') { return; }
         Logger.log(`live action: ${JSON.stringify(action, undefined, 2)}, result: ${JSON.stringify(result, undefined, 2)}`, SurrealDbController.name);
       };
     return await this.surrealDbService.live(table, callback);
@@ -144,7 +144,7 @@ export class SurrealDbController {
       plainToInstance(InsertRelation, item, {
         enableImplicitConversion: true,
         excludeExtraneousValues: false,
-      })
+      }),
     );
     // used InsertRelationDto here, not in controller
     const insertRelationDto = new InsertRelationDto();
@@ -190,7 +190,7 @@ export class SurrealDbController {
 
   // TODO: relate: this method is WIP, until it works in surreal javascript sdk
   @Post('/relate/:thing')
-async relate(@Param('thing') thing: string, @Body() relateDto: RelateDto) {
+  async relate(@Param('thing') thing: string, @Body() relateDto: RelateDto) {
     // BOF: future implementation
     // // Logger.log(`Raw Payload: ${JSON.stringify(rawPayload)}`, SurrealDbController.name);
     // // normalize payload to always be an array, this wai it works with arrays and plain objects
@@ -208,7 +208,7 @@ async relate(@Param('thing') thing: string, @Body() relateDto: RelateDto) {
     // // TRY #1: string
     // // const from = 'person:mario';
     // // const to = 'post:3jzehgkqyqvip86ryy5f';
-    // // 
+    // //
     // // TRY #2: StringRecordId
     // // const from = new StringRecordId('person:mario');
     // // const to = new StringRecordId('post:3jzehgkqyqvip86ryy5f');

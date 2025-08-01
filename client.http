@@ -347,8 +347,7 @@ Content-Type: application/json
     "last": "Morgan Hitchcock"
   },
   "marketing": true,
-  "age": 28,
-  "html":"123"
+  "age": 28
 }
 
 ### postInsert

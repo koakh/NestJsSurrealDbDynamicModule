@@ -23,9 +23,11 @@ $ yarn surreal:docker
 $ yarn surreal:initdb
 
 # term2
+$ cd packages/app-lib/
 $ yarn app-lib:dev
 
 # term3
+$ cd packages/app-rst/
 $ yarn start:app-rst
 ```
 

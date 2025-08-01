@@ -165,7 +165,10 @@ export class SurrealDbService {
    * @return The authentication token.
    */
   async signup(vars: ScopeAuth | AccessRecordAuth): Promise<string> {
-    return await this.db.signup(vars).catch(() => { throw new ResponseError('signup error'); });
+    // await this.db.use({ namespace: 'test', database: 'test' });
+    return await this.db.signup(vars).catch((e) => {
+      throw new ResponseError(`signup error${e.message ? `: ${e.message}` : ''}`);
+    });
   }
 
   /**
@@ -288,7 +291,43 @@ export class SurrealDbService {
    * @param data - The document / record data to insert.
    */
   async create<T extends { [x: string]: unknown; id: RecordId<string> }, U extends T>(thing: string | Table<string>, data?: any): Promise<Array<{ [x: string]: unknown; id: RecordId<string>; }>> {
-    return await this.db.create<T, U>(thing as string, data);
+
+    // TODO: use generic types in all operations
+
+    // tslint:disable-next-line:interface-over-type-literal
+    type Person = {
+      // id: string;
+      name: string;
+      settings: {
+        active: boolean;
+        marketing: boolean;
+      };
+    };
+
+    // tslint:disable-next-line:interface-over-type-literal disable-next-line:no-shadowed-variable
+    type User = {
+      age: number,
+      marketing: boolean,
+      name: {
+        first: string,
+        last: string,
+      },
+      title: string,
+    };
+
+    // Create a record with a random ID
+    // const [person] = await this.db.create<Person>('person');
+    // Create a record with a specific ID
+    // const person = await this.db.create<Person>(new RecordId('person', 'tobie'), {
+    //   name: 'Tobie',
+    //   settings: {
+    //     active: true,
+    //     marketing: true,
+    //   },
+    // });
+    // Logger.log(`person: [${JSON.stringify(person, undefined, 2)}]`);
+
+    return await this.db.create<User>(await this.recordIdFromStringThing(thing as string), data);
   }
 
   /**

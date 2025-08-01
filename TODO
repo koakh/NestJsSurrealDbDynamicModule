@@ -1,3 +1,10 @@
+New:
+  ☐ all users unathenticated can use create to create records
+  ☐ singnin and singup doesn't work with new sdk 1.3.2
+    ☐ ResponseError: signup error: There was a problem with the database: The access method does not exist
+    Schema Not Applied: The most common cause is that your DEFINE ACCESS account statement hasn't been executed yet. Make sure you've run your schema definition first
+    or wrong ns and db: surrealdb database is ready url: ws://127.0.0.1:8888/rpc, namespace: micropal, database: micropal
+
 Global:
   ☐ @critical cleanup main project README with scripts from package.json, links to project README's, how to run all projects, init db to test signup signin etc
   ☐ add initdb with sample data and maybe a schema `initdb.sql` (from old project)

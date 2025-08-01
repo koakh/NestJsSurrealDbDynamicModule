@@ -42,7 +42,7 @@
     "babel-core": "6.26.3",
     "class-validator": "0.14.1",
     "rxjs": "7.8.1",
-    "surrealdb": "1.1.0",
+    "surrealdb": "^1.3.2",
     "ts-morph": "26.0.0",
     "ws": "8.18.0"
   },
