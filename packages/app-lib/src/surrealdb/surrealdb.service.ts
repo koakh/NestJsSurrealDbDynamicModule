@@ -261,7 +261,7 @@ export class SurrealDbService {
    * @param bindings - Assigns variables which can be used in the query.
    * @borrows https://chatgpt.com/c/6745f7e3-bd4c-8004-b607-2d4d747773a5
    */
-  async queryRaw<T extends unknown[]>(...params: [prepared: PreparedQuery, gaps?: Fill<unknown>[]]): Promise<Prettify<MapQueryResult<T>>> {
+  async queryRaw<T extends unknown[]>(...params: [prepared: PreparedQuery, gaps?: Array<Fill<unknown>>]): Promise<Prettify<MapQueryResult<T>>> {
     return await this.db.queryRaw<T>(...params);
   }
 
@@ -271,14 +271,14 @@ export class SurrealDbService {
    * @param thing - The table name or a record ID to select.
    */
   async select<T extends { [x: string]: unknown; }>(thing: RecordId$1 | RecordIdRange | Table | string)
-    : Promise<ActionResult<T> | Promise<ActionResult<T>[]>> {
+    : Promise<ActionResult<T> | Promise<Array<ActionResult<T>>>> {
     if (thing.toString().split(':').length === 2) {
       // if is a recordId
       await this.thingExists(thing.toString());
       return await this.db.select<T>(new StringRecordId(thing.toString()));
     } else {
       // if is a table
-      return await this.db.select<T>(thing.toString())
+      return await this.db.select<T>(thing.toString());
     }
   }
 
@@ -287,8 +287,7 @@ export class SurrealDbService {
    * @param thing - The table name or the specific record ID to create.
    * @param data - The document / record data to insert.
    */
-  async create<T extends { [x: string]: unknown; id: RecordId<string> }, U extends T>(thing: string | Table<string>, data?: any): Promise<{ [x: string]: unknown; id: RecordId<string>; }[]> {
-    // NOTE: if use id is tb:id will be object, if id is tb will be array, this will unwrap array and responses always with object
+  async create<T extends { [x: string]: unknown; id: RecordId<string> }, U extends T>(thing: string | Table<string>, data?: any): Promise<Array<{ [x: string]: unknown; id: RecordId<string>; }>> {
     return await this.db.create<T, U>(thing as string, data);
   }
 
@@ -297,7 +296,7 @@ export class SurrealDbService {
    * @param table - The table name to insert into.
    * @param data - The document(s) / record(s) to insert.
    */
-  async insert<T extends { [x: string]: unknown; id: RecordId<string> }, U extends T>(thing: string | Table<string>, data?: any): Promise<{ [x: string]: unknown; id: RecordId<string>; }[]> {
+  async insert<T extends { [x: string]: unknown; id: RecordId<string> }, U extends T>(thing: string | Table<string>, data?: any): Promise<Array<{ [x: string]: unknown; id: RecordId<string>; }>> {
     return await this.db.insert<T, U>(thing, data);
   }
 
@@ -306,7 +305,7 @@ export class SurrealDbService {
    * @param thing - The table name or the specific record ID to create.
    * @param data - The document(s) / record(s) to insert.
    */
-  async insertRelation<T extends { [x: string]: unknown; id: RecordId<string> }, U extends T = T>(table: string | Table<string>, data?: any): Promise<ActionResult<T>[]> {
+  async insertRelation<T extends { [x: string]: unknown; id: RecordId<string> }, U extends T = T>(table: string | Table<string>, data?: any): Promise<Array<ActionResult<T>>> {
     return await this.db.insertRelation<T, U>(table, data);
   }
 
@@ -317,14 +316,14 @@ export class SurrealDbService {
    * @param thing - The table name or the specific record ID to update.
    * @param data - The document / record data to insert.
    */
-  async update<T extends { [x: string]: unknown; id: RecordId<string> }, U extends T>(thing: RecordIdRange | Table | string, data: U): Promise<ActionResult<T> | ActionResult<T>[]> {
+  async update<T extends { [x: string]: unknown; id: RecordId<string> }, U extends T>(thing: RecordIdRange | Table | string, data: U): Promise<ActionResult<T> | Array<ActionResult<T>>> {
     if (thing.toString().split(':').length === 2) {
       // if is a recordId
       await this.thingExists(thing.toString());
       return await this.db.update<T, U>(new StringRecordId(thing.toString()), data);
     } else {
       // if is a table
-      return await this.db.update<T, U>(thing.toString(), data)
+      return await this.db.update<T, U>(thing.toString(), data);
     }
   }
 
@@ -335,14 +334,14 @@ export class SurrealDbService {
    * @param thing - The table name or the specific record ID to upsert.
    * @param data - The document / record data to insert.
    */
-  async upsert<T extends { [x: string]: unknown; id: RecordId<string> }, U extends T>(thing: string | Table<string> | RecordIdRange<string>, data?: any): Promise<ActionResult<T> | ActionResult<T>[]> {
+  async upsert<T extends { [x: string]: unknown; id: RecordId<string> }, U extends T>(thing: string | Table<string> | RecordIdRange<string>, data?: any): Promise<ActionResult<T> | Array<ActionResult<T>>> {
     if (thing.toString().split(':').length === 2) {
       // if is a recordId
       await this.thingExists(thing.toString());
       return await this.db.upsert<T, U>(new StringRecordId(thing.toString()), data);
     } else {
       // if is a table
-      return await this.db.upsert<T, U>(thing.toString(), data)
+      return await this.db.upsert<T, U>(thing.toString(), data);
     }
   }
 
@@ -353,14 +352,14 @@ export class SurrealDbService {
    * @param thing - The table name or the specific record ID to change.
    * @param data - The document / record data to insert.
    */
-  async merge<T extends { [x: string]: unknown; id: RecordId<string> }, U extends T>(thing: string | Table<string> | RecordIdRange<string>, data?: any): Promise<ActionResult<T> | ActionResult<T>[]> {
+  async merge<T extends { [x: string]: unknown; id: RecordId<string> }, U extends T>(thing: string | Table<string> | RecordIdRange<string>, data?: any): Promise<ActionResult<T> | Array<ActionResult<T>>> {
     if (thing.toString().split(':').length === 2) {
       // if is a recordId
       await this.thingExists(thing.toString());
       return await this.db.merge<T, U>(new StringRecordId(thing.toString()), data);
     } else {
       // if is a table
-      return await this.db.merge<T, U>(thing.toString(), data)
+      return await this.db.merge<T, U>(thing.toString(), data);
     }
   }
 
@@ -371,14 +370,14 @@ export class SurrealDbService {
    * @param thing - The table name or the specific record ID to modify.
    * @param data - The JSON Patch data with which to modify the records.
    */
-  async patch<T extends { [x: string]: unknown; id: RecordId<string> }>(thing: string | Table<string> | RecordIdRange<string>, data?: any): Promise<ActionResult<T> | ActionResult<T>[]> {
+  async patch<T extends { [x: string]: unknown; id: RecordId<string> }>(thing: string | Table<string> | RecordIdRange<string>, data?: any): Promise<ActionResult<T> | Array<ActionResult<T>>> {
     if (thing.toString().split(':').length === 2) {
       // if is a recordId
       await this.thingExists(thing.toString());
       return await this.db.patch<T>(new StringRecordId(thing.toString()), data);
     } else {
       // if is a table
-      return await this.db.patch<T>(thing.toString(), data)
+      return await this.db.patch<T>(thing.toString(), data);
     }
   }
 
@@ -386,14 +385,14 @@ export class SurrealDbService {
    * Deletes all records in a table, or a specific record, from the database.
    * @param thing - The table name or a record ID to select.
    */
-  async delete<T extends { [x: string]: unknown; id: RecordId<string> }>(thing: string | Table<string> | RecordIdRange<string>): Promise<ActionResult<T> | ActionResult<T>[]> {
+  async delete<T extends { [x: string]: unknown; id: RecordId<string> }>(thing: string | Table<string> | RecordIdRange<string>): Promise<ActionResult<T> | Array<ActionResult<T>>> {
     if (thing.toString().split(':').length === 2) {
       // if is a recordId
       await this.thingExists(thing.toString());
       return await this.db.delete<T>(new StringRecordId(thing.toString()));
     } else {
       // if is a table
-      return await this.db.delete<T>(thing.toString())
+      return await this.db.delete<T>(thing.toString());
     }
   }
 
