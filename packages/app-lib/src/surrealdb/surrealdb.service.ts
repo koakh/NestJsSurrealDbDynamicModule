@@ -304,16 +304,17 @@ export class SurrealDbService {
       };
     };
 
+    // TODO: clash with type `SurrealDbUser as User`
     // tslint:disable-next-line:interface-over-type-literal disable-next-line:no-shadowed-variable
-    type User = {
-      age: number,
-      marketing: boolean,
-      name: {
-        first: string,
-        last: string,
-      },
-      title: string,
-    };
+    // type User = {
+    //   age: number,
+    //   marketing: boolean,
+    //   name: {
+    //     first: string,
+    //     last: string,
+    //   },
+    //   title: string,
+    // };
 
     // Create a record with a random ID
     // const [person] = await this.db.create<Person>('person');

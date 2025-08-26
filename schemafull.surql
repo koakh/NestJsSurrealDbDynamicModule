@@ -6,8 +6,9 @@ DEFINE DATABASE test;
 -- https://claude.ai/chat/4abf8c3e-c943-4b03-9ec2-359feb43fd82
 DEFINE TABLE user SCHEMAFULL PERMISSIONS 
   -- this will be used to check permission when we are signin and select all users
-  FOR SELECT WHERE id = $auth.id OR $auth.admin = true,  
-  FOR CREATE FULL, 
+  FOR SELECT WHERE id = $auth.id OR $auth.admin = true,
+  -- all users can create user records, like it's own user
+  FOR CREATE FULL,
   FOR UPDATE, DELETE WHERE id = $auth.id OR $auth.admin = true;
 
 -- Define fields

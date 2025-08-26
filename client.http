@@ -149,7 +149,7 @@ Content-Type: application/json
   "access": "account",
   // We can add any variable here to use in the SIGNUP clause
   "variables": {
-    "username": "alex",
+    "username": "kapa",
     "password": "password",
     "tags": ["rust", "golang", "javascript"],
     "settings": {
@@ -175,7 +175,7 @@ Content-Type: application/json
   // account match `DEFINE ACCESS account ON DATABASE...`
   "access": "account",
   "variables": {
-    "username": "alex",
+    "username": "kapa",
     "password": "password"
     // this can be used, if used in signin function
     // "tags": ["rust", "golang", "javascript"],
@@ -325,33 +325,34 @@ Content-Type: application/json
 }
 
 
-### getSelect
-// @name getSelect
+### getSelectPerson
+// @name getSelectPerson
 
-GET {{uriSurrealDb}}/select/person:0betlakpbh5oojrcypnw
+GET {{uriSurrealDb}}/select/person
+// GET {{uriSurrealDb}}/select/person:tek49d0wgf7xp2tbiy5n
 Content-Type: application/json
 // Authorization: Bearer {{postSignin.response.body.*}}
 
-### postCreate
-// @name postCreate
+### postCreatePerson
+// @name postCreatePerson
 // NOTE: if use id `tb:id` result will be object, if use id `tb` result will be array
 
-POST {{uriSurrealDb}}/create/person:mario
+POST {{uriSurrealDb}}/create/foobar:mario
 Content-Type: application/json
 // Authorization: Bearer {{postSignin.response.body.*}}
 
 {
   "title": "Founder & CEO",
   "name": {
-    "first": "Jamie",
-    "last": "Morgan Hitchcock"
+    "first": "Mário",
+    "last": "Monteiro"
   },
   "marketing": true,
   "age": 28
 }
 
-### postInsert
-// @name postInsert
+### postInsertPerson
+// @name postInsertPerson
 
 POST {{uriSurrealDb}}/insert/person
 Content-Type: application/json
@@ -361,6 +362,8 @@ Content-Type: application/json
 [
   // test with multiple records
   {
+    // optionl: will be person:m1
+    "id": "m1",
     "title": "Founder & CEO",
     "name": {
       "first": "Multiple 1",
@@ -368,9 +371,11 @@ Content-Type: application/json
     },
     "marketing": true,
     "age": 28,
-    "html":"123"
+    "html":"<p>moke<p>"
   },
   {
+    // optionl: will be person:m2
+    "id": "m2",
     "title": "Founder & CEO",
     "name": {
       "first": "Multiple 2",
@@ -378,7 +383,31 @@ Content-Type: application/json
     },
     "marketing": true,
     "age": 28,
-    "html":"123"
+    "html":"<p>moke<p>"
+  }
+]
+
+### postInsertPost
+// @name postInsertPost
+
+POST {{uriSurrealDb}}/insert/post
+Content-Type: application/json
+// Inserts one or multiple records in the database.
+// Authorization: Bearer {{postSignin.response.body.*}}
+
+[
+  // test with multiple records
+  {
+    // optionl: will be post:m1
+    "id": "p1",
+    "title": "Post 1",
+    "html":"<p>moke<p>"
+  },
+  {
+    // optionl: will be post:m2
+    "id": "p2",
+    "title": "Post 2",
+    "html":"<p>moke<p>"
   }
 ]
 
@@ -399,11 +428,11 @@ Content-Type: application/json
   // test with multiple relations
 	{
     "in": "person:mario",
-    "out": "post:wu4o9efvd25nz9rpp5v3"
+    "out": "post:p1"
 	},
 	{
     "in": "person:alex",
-    "out": "post:3jzehgkqyqvip86ryy5f"
+    "out": "post:p2"
 	}
 ]
 
