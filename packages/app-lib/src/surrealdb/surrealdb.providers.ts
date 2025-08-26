@@ -7,8 +7,8 @@ export const createNestSurrealDbModuleProviders = [
   {
     inject: [SURREALDB_MODULE_OPTIONS],
     provide: SURREALDB_MODULE_USER_SERVICE,
-    useFactory: async (SurrealDbModuleOptions: SurrealDbModuleOptions) => {
-      return SurrealDbModuleOptions.userService;
+    useFactory: async (surrealDbModuleOptions: SurrealDbModuleOptions) => {
+      return surrealDbModuleOptions.userService;
     },
   },
 ];

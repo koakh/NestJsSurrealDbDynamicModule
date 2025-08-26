@@ -4,10 +4,12 @@
     "fuser",
     "initdb",
     "koakh",
+    "micropal",
     "rocksdb",
     "signup",
     "surql",
     "Tobie",
-    "userservice"
+    "userservice",
+    "yalc"
   ]
 }

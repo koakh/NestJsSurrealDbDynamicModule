@@ -11,7 +11,8 @@
   - [npm ERR! need auth This command requires you to be logged in to https://registry.yarnpkg.com/](#npm-err-need-auth-this-command-requires-you-to-be-logged-in-to-httpsregistryyarnpkgcom)
   - [Force Consumer Apps to use AppLib package](#force-consumer-apps-to-use-applib-package)
   - [Fix: npm error code EINVALIDPACKAGENAME](#fix-npm-error-code-einvalidpackagename)
-  - [https://claude.ai/chat/f0dbf42b-8120-4873-a75e-79ef339045e2: Claude help on use Generics with SurrealDb SDK, DTO Validations](#httpsclaudeaichatf0dbf42b-8120-4873-a75e-79ef339045e2-claude-help-on-use-generics-with-surrealdb-sdk-dto-validations)
+  - [SurrealDB NestJS Type Safety: Claude help on use Generics with SurrealDb SDK, DTO Validations](#surrealdb-nestjs-type-safety-claude-help-on-use-generics-with-surrealdb-sdk-dto-validations)
+  - [Reconnect](#reconnect)
 
 some other projects and files that help
 
@@ -315,6 +316,16 @@ fix removing both lines,
 
 after this both commands works flawless `version:patch` and `version:publish`
 
-## https://claude.ai/chat/f0dbf42b-8120-4873-a75e-79ef339045e2: Claude help on use Generics with SurrealDb SDK, DTO Validations
+## SurrealDB NestJS Type Safety: Claude help on use Generics with SurrealDb SDK, DTO Validations
 
 - [SurrealDB NestJS Type Safety](https://claude.ai/chat/f0dbf42b-8120-4873-a75e-79ef339045e2)
+
+## Reconnect
+
+- [discord](https://discord.com/channels/902568124350599239/1013527402674139268/1383477815680303255)
+
+> required bump `"surrealdb": "^1.3.2"` to `"surrealdb": "v2.0.0-alpha.4"`
+
+```shell
+$ yarn add surrealdb@v2.0.0-alpha.4 --mode=skip-build
+```

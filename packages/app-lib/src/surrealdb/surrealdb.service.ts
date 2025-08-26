@@ -4,7 +4,7 @@ import { AccessRecordAuth, ActionResult, AnyAuth, default as Auth, ExportOptions
 import { UserServiceAbstract } from './surrealdb.abstracts';
 import { SURREALDB_MODULE_OPTIONS, SURREALDB_MODULE_USER_SERVICE, adminCurrentUser } from './surrealdb.constants';
 import { SurrealDbModuleOptions } from './surrealdb.interfaces';
-import { ToSurrealType, RecordId$1, SurrealDbUser as SurrealDbUser } from './types';
+import { RecordId$1, SurrealDbUser as SurrealDbUser } from './types';
 
 @Injectable()
 export class SurrealDbService {
