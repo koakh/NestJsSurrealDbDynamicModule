@@ -4,7 +4,7 @@ import { AccessRecordAuth, ActionResult, AnyAuth, default as Auth, ExportOptions
 import { UserServiceAbstract } from './surrealdb.abstracts';
 import { SURREALDB_MODULE_OPTIONS, SURREALDB_MODULE_USER_SERVICE, adminCurrentUser } from './surrealdb.constants';
 import { SurrealDbModuleOptions } from './surrealdb.interfaces';
-import { RecordId$1, SurrealDbUser as User } from './types';
+import { ToSurrealType, RecordId$1, SurrealDbUser as SurrealDbUser } from './types';
 
 @Injectable()
 export class SurrealDbService {
@@ -41,7 +41,7 @@ export class SurrealDbService {
 
   // example
   // userServiceAbstract: this is from consumer app AppModule/UserService
-  getUserFindOneByField(): Promise<User> {
+  getUserFindOneByField(): Promise<SurrealDbUser> {
     return this.userService.findOneByField('username', 'admin', adminCurrentUser);
   }
 
@@ -291,45 +291,20 @@ export class SurrealDbService {
    * @param data - The document / record data to insert.
    */
   async create<T extends { [x: string]: unknown; id: RecordId<string> }, U extends T>(thing: string | Table<string>, data?: any): Promise<Array<{ [x: string]: unknown; id: RecordId<string>; }>> {
-
-    // TODO: use generic types in all operations
-
-    // tslint:disable-next-line:interface-over-type-literal
-    type Person = {
-      // id: string;
-      name: string;
-      settings: {
-        active: boolean;
-        marketing: boolean;
-      };
-    };
-
-    // TODO: clash with type `SurrealDbUser as User`
-    // tslint:disable-next-line:interface-over-type-literal disable-next-line:no-shadowed-variable
-    // type User = {
-    //   age: number,
-    //   marketing: boolean,
-    //   name: {
-    //     first: string,
-    //     last: string,
-    //   },
-    //   title: string,
-    // };
-
-    // Create a record with a random ID
-    // const [person] = await this.db.create<Person>('person');
-    // Create a record with a specific ID
-    // const person = await this.db.create<Person>(new RecordId('person', 'tobie'), {
-    //   name: 'Tobie',
-    //   settings: {
-    //     active: true,
-    //     marketing: true,
-    //   },
-    // });
-    // Logger.log(`person: [${JSON.stringify(person, undefined, 2)}]`);
-
-    return await this.db.create<User>(await this.recordIdFromStringThing(thing as string), data);
+    return await this.db.create<T, U>(await this.recordIdFromStringThing(thing as string), data);
   }
+
+  /**
+   * WIP: trying to use generics to type things, better to not use generics types, and thrust for now in dto validation, and keep the code clean
+   * Creates a record in the database.
+   * Alternative with minimal generics - most reliable
+   * @param thing - The table name or the specific record ID to create.
+   * @param data - The document / record data to insert.
+   */
+  // async create<T extends Record<string, unknown>>(
+  //   thing: string | Table<string>, data?: Omit<T, 'id'>): Promise<Array<T & { id: RecordId$1<string> }>> {
+  //   return await this.db.create(await this.recordIdFromStringThing(thing as string), data);
+  // }
 
   /**
    * Inserts one or multiple records in the database.

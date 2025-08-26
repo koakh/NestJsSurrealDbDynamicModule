@@ -11,6 +11,7 @@
   - [npm ERR! need auth This command requires you to be logged in to https://registry.yarnpkg.com/](#npm-err-need-auth-this-command-requires-you-to-be-logged-in-to-httpsregistryyarnpkgcom)
   - [Force Consumer Apps to use AppLib package](#force-consumer-apps-to-use-applib-package)
   - [Fix: npm error code EINVALIDPACKAGENAME](#fix-npm-error-code-einvalidpackagename)
+  - [https://claude.ai/chat/f0dbf42b-8120-4873-a75e-79ef339045e2: Claude help on use Generics with SurrealDb SDK, DTO Validations](#httpsclaudeaichatf0dbf42b-8120-4873-a75e-79ef339045e2-claude-help-on-use-generics-with-surrealdb-sdk-dto-validations)
 
 some other projects and files that help
 
@@ -310,6 +311,10 @@ npm error Invalid package name "// in case of error: npm error Unsupported URL T
 }
 ```
 
-fix removing both lines, 
+fix removing both lines,
 
 after this both commands works flawless `version:patch` and `version:publish`
+
+## https://claude.ai/chat/f0dbf42b-8120-4873-a75e-79ef339045e2: Claude help on use Generics with SurrealDb SDK, DTO Validations
+
+- [SurrealDB NestJS Type Safety](https://claude.ai/chat/f0dbf42b-8120-4873-a75e-79ef339045e2)

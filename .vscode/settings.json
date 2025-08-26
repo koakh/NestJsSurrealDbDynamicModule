@@ -1,11 +1,13 @@
 {
   "cSpell.words": [
+    "appservice",
     "fuser",
     "initdb",
     "koakh",
     "rocksdb",
     "signup",
     "surql",
-    "Tobie"
+    "Tobie",
+    "userservice"
   ]
 }

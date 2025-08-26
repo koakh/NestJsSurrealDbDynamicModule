@@ -3,6 +3,7 @@ import { plainToInstance } from 'class-transformer';
 import { ExportOptions, StringRecordId, Uuid } from 'surrealdb';
 import { ConnectDto, DataDto, InsertRelation, InsertRelationDto, RelateDto, SigninDto, SignupDto, UseDto } from './dto';
 import { SurrealDbService } from './surrealdb.service';
+import { SurrealDbUserSurrealType } from './types';
 
 const callbackSubscribeLive =
   // The callback function takes two arguments: the 'action' and 'result' properties

@@ -55,6 +55,23 @@ Content-Type: {{contentType}}
 {
 }
 
+### postPersonCreate
+// @name postPersonCreate
+
+POST {{uri}}/person/create/person01
+Content-Type: application/json
+
+// this will fail if dto validation occurs
+{
+  "title": "Founder & CEO",
+  "name": {
+    "first": "Mário",
+    "last": "Monteiro"
+  },
+  "marketing": true,
+  "age": 28
+}
+
 // local AppModule:DbModule: DbController
 
 ### getUserFindOneByFieldInsideDbModule
@@ -337,7 +354,7 @@ Content-Type: application/json
 // @name postCreatePerson
 // NOTE: if use id `tb:id` result will be object, if use id `tb` result will be array
 
-POST {{uriSurrealDb}}/create/foobar:mario
+POST {{uriSurrealDb}}/create/user:person6
 Content-Type: application/json
 // Authorization: Bearer {{postSignin.response.body.*}}
 
