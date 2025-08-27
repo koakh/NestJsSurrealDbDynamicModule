@@ -72,7 +72,6 @@ export class SurrealDbService {
   private async getDb(throwError: boolean = true): Promise<Surreal> {
     const { url, namespace, database, username, password, userService } = this.config;
     this.db = new Surreal();
-    this.subscribedToConnectionEvents = false;
 
     try {
       // this appear on start of server log, after `[InstanceLoader] ConfigModule dependencies initialize`
