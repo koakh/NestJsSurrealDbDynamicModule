@@ -125,7 +125,8 @@ export class SurrealDbService {
       return this.db;
     } catch (error) {
       // tslint:disable-next-line:no-console
-      Logger.error(`Failed to connect to SurrealDB at url: ${url}, namespace: ${namespace}, database: ${database}: error: ${error instanceof Error ? error.message : JSON.stringify(error)}`, SurrealDbService.name);
+      // Logger.error(`Failed to connect to SurrealDB at url: ${url}, namespace: ${namespace}, database: ${database}: error: ${error instanceof Error ? error.message : JSON.stringify(error)}`, SurrealDbService.name);
+      Logger.error(`Failed to connect to SurrealDB at url: ${url}, namespace: ${namespace}, database: ${database}`, SurrealDbService.name);
       await this.db.close();
       // use false on c3-backend to prevent a crash o app boot, only throw and crash app if throwError is true
       if (throwError) {

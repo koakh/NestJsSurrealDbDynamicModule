@@ -6,3 +6,4 @@ export const adminCurrentUser = {
   username: 'admin',
   roles: ['ROLE_USER', 'ROLE_ADMIN'],
 };
+export const RECONNECT_TIMEOUT_INTERVAL = 5000;

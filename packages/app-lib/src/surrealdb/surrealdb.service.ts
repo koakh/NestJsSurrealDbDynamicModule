@@ -2,7 +2,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 // tslint:disable-next-line:max-line-length
 import { AccessRecordAuth, ActionResult, AnyAuth, default as Auth, ExportOptions, Fill, LiveHandler, MapQueryResult, Patch, PreparedQuery, Prettify, QueryParameters, RecordId, RecordIdRange, ResponseError, RpcResponse, ScopeAuth, StringRecordId, default as Surreal, Table, Uuid } from 'surrealdb';
 import { UserServiceAbstract } from './surrealdb.abstracts';
-import { SURREALDB_MODULE_OPTIONS, SURREALDB_MODULE_USER_SERVICE, adminCurrentUser } from './surrealdb.constants';
+import { RECONNECT_TIMEOUT_INTERVAL, SURREALDB_MODULE_OPTIONS, SURREALDB_MODULE_USER_SERVICE, adminCurrentUser } from './surrealdb.constants';
 import { SurrealDbModuleOptions } from './surrealdb.interfaces';
 import { RecordId$1, SurrealDbUser } from './types';
 
@@ -12,7 +12,7 @@ export class SurrealDbService {
 
   constructor(
     @Inject(SURREALDB_MODULE_OPTIONS)
-    private readonly options: SurrealDbModuleOptions,
+    private readonly config: SurrealDbModuleOptions,
     @Inject(SURREALDB_MODULE_USER_SERVICE)
     private readonly userService: UserServiceAbstract,
     // TODO: comment/uncomment to use/hide outside AppServiceAbstract
@@ -22,14 +22,23 @@ export class SurrealDbService {
     // @Inject(APP_SERVICE)
     // private readonly appService: AppServiceAbstract,
   ) {
-    if (!options.initSurrealDb || !options.initSurrealDb === false) {
-      this.initSurrealDb(options.initSurrealDbThrowError);
+    if (!config.initSurrealDb || !config.initSurrealDb === false) {
+      this.reconnectTimeoutInterval = setInterval(() => {
+        if (this.db && this.db.status) {
+          Logger.log(`Re-connect to surrealdb, current status: ${this.db.status}`, SurrealDbService.name);
+        } else {
+          Logger.log(`Connect to surrealdb...`, SurrealDbService.name);
+        }
+        this.initSurrealDb(config.initSurrealDbThrowError);
+      }, RECONNECT_TIMEOUT_INTERVAL);
     }
   }
 
+  private reconnectTimeoutInterval: NodeJS.Timeout;
+
   // SurrealDbModuleOptions
   getConfig(): SurrealDbModuleOptions {
-    return this.options;
+    return this.config;
   }
 
   // TODO: comment/uncomment to use/hide outside AppServiceAbstract
@@ -57,8 +66,14 @@ export class SurrealDbService {
   // initSurrealDb
 
   private async initSurrealDb(throwError: boolean = true) {
+    await this.getDb(throwError);
+  }
+
+  private async getDb(throwError: boolean = true): Promise<Surreal> {
+    const { url, namespace, database, username, password, userService } = this.config;
     this.db = new Surreal();
-    const { url, namespace, database, username, password, userService } = this.options;
+    this.subscribedToConnectionEvents = false;
+
     try {
       // this appear on start of server log, after `[InstanceLoader] ConfigModule dependencies initialize`
       // Logger.log(`url: ${url}, namespace: ${namespace}, database: ${database}, username: ${username}, password: ${password}`, SurrealDbService.name);
@@ -82,10 +97,12 @@ export class SurrealDbService {
       // wait for the connection to the database to succeed
       Logger.verbose(`surrealdb database is ready url: ${url}, namespace: ${namespace}, database: ${database}`, SurrealDbService.name);
       await this.db.ready;
-      // return this.db;
+      clearTimeout(this.reconnectTimeoutInterval);
+      return this.db;
     } catch (error) {
       // tslint:disable-next-line:no-console
-      Logger.error(`Failed to connect to SurrealDB at url: ${url}, namespace: ${namespace}, database: ${database}: ${error instanceof Error ? error.message : String(error)}`, SurrealDbService.name);
+      // Logger.error(`Failed to connect to SurrealDB at url: ${url}, namespace: ${namespace}, database: ${database}: ${error instanceof Error ? error.message : String(error)}`, SurrealDbService.name);
+      Logger.error(`Failed to connect to SurrealDB at url: ${url}, namespace: ${namespace}, database: ${database}`, SurrealDbService.name);
       if (this.db?.connection?.ready) {
         await this.db.close();
       }
@@ -144,7 +161,7 @@ export class SurrealDbService {
       versionCheckTimeout?: number;
     },
   ): Promise<true> {
-    return await this.db.connect(url, opts || this.options);
+    return await this.db.connect(url, opts || this.config);
   }
 
   /**
