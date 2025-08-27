@@ -5,4 +5,5 @@ export interface EnvironmentVariables {
   surrealDbDatabase: string;
   surrealDbUsername: string;
   surrealDbPassword: string;
+  surrealdbInitSurrealDbThrowError: boolean;
 }

@@ -104,7 +104,8 @@ POST {{uriSurrealDb}}/connect
 Content-Type: application/json
 
 {
-  "url": "ws://127.0.0.1:8000/rpc"
+  // "url": "ws://127.0.0.1:8000/rpc"
+  "url": "http://127.0.0.1:8000"
 }
 
 ### postClose
@@ -354,7 +355,8 @@ Content-Type: application/json
 // @name postCreatePerson
 // NOTE: if use id `tb:id` result will be object, if use id `tb` result will be array
 
-POST {{uriSurrealDb}}/create/user:person6
+POST {{uriSurrealDb}}/create/person
+// POST {{uriSurrealDb}}/create/person:person6
 Content-Type: application/json
 // Authorization: Bearer {{postSignin.response.body.*}}
 

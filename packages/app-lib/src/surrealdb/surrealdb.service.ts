@@ -4,7 +4,7 @@ import { AccessRecordAuth, ActionResult, AnyAuth, default as Auth, ExportOptions
 import { UserServiceAbstract } from './surrealdb.abstracts';
 import { SURREALDB_MODULE_OPTIONS, SURREALDB_MODULE_USER_SERVICE, adminCurrentUser } from './surrealdb.constants';
 import { SurrealDbModuleOptions } from './surrealdb.interfaces';
-import { RecordId$1, SurrealDbUser as SurrealDbUser } from './types';
+import { RecordId$1, SurrealDbUser } from './types';
 
 @Injectable()
 export class SurrealDbService {
@@ -45,15 +45,36 @@ export class SurrealDbService {
     return this.userService.findOneByField('username', 'admin', adminCurrentUser);
   }
 
+  /**
+   * shared function to check and try reConnect connection, before launch any surreal wrapper function
+   */
+  async checkConnectionAndTryReconnect() {
+    return await this.db.ping().catch(async () => {
+      await this.initSurrealDb(false).catch();
+    });
+  }
+
   // initSurrealDb
 
-  private async initSurrealDb(throwError: boolean = true): Promise<Surreal> {
+  private async initSurrealDb(throwError: boolean = true) {
     this.db = new Surreal();
     const { url, namespace, database, username, password, userService } = this.options;
     try {
       // this appear on start of server log, after `[InstanceLoader] ConfigModule dependencies initialize`
       // Logger.log(`url: ${url}, namespace: ${namespace}, database: ${database}, username: ${username}, password: ${password}`, SurrealDbService.name);
-      await this.db.connect(url, { namespace, database, auth: { username, password } });
+      await this.db.connect(url, {
+        namespace,
+        database,
+        reconnect: {
+          enabled: true,
+          attempts: -1,
+          retryDelay: 500,
+          retryDelayMax: 5000,
+          // retryDelayMultiplier,
+          // retryDelayJitter,
+        },
+        auth: { username, password },
+      });
       // already defined above
       // await this.db.use({ namespace, database });
       // in new version surrealdb v2.3.7, this is required
@@ -61,11 +82,13 @@ export class SurrealDbService {
       // wait for the connection to the database to succeed
       Logger.verbose(`surrealdb database is ready url: ${url}, namespace: ${namespace}, database: ${database}`, SurrealDbService.name);
       await this.db.ready;
-      return this.db;
+      // return this.db;
     } catch (error) {
       // tslint:disable-next-line:no-console
       Logger.error(`Failed to connect to SurrealDB at url: ${url}, namespace: ${namespace}, database: ${database}: ${error instanceof Error ? error.message : String(error)}`, SurrealDbService.name);
-      await this.db.close();
+      if (this.db?.connection?.ready) {
+        await this.db.close();
+      }
       // use false on c3-backend to prevent a crash o app boot
       if (throwError) {
         throw error;
@@ -134,7 +157,8 @@ export class SurrealDbService {
   /**
    * Ping SurrealDB instance
    */
-  async ping(): Promise<true> {
+  async ping(): Promise<true | void> {
+    await this.checkConnectionAndTryReconnect();
     return await this.db.ping();
   }
 
@@ -144,6 +168,7 @@ export class SurrealDbService {
    * @param db - Switches to a specific database.
    */
   async use(namespace?: string, database?: string): Promise<true> {
+    await this.checkConnectionAndTryReconnect();
     return await this.db.use({ namespace, database });
   }
 
@@ -156,6 +181,7 @@ export class SurrealDbService {
    * @return The record linked to the record ID used for authentication
    */
   async info<T extends Record<string, unknown>>(): Promise<ActionResult<T> | undefined> {
+    await this.checkConnectionAndTryReconnect();
     return await this.db.info<T>();
   }
 
@@ -165,6 +191,7 @@ export class SurrealDbService {
    * @return The authentication token.
    */
   async signup(vars: ScopeAuth | AccessRecordAuth): Promise<string> {
+    await this.checkConnectionAndTryReconnect();
     // await this.db.use({ namespace: 'test', database: 'test' });
     return await this.db.signup(vars).catch((e) => {
       throw new ResponseError(`signup error${e.message ? `: ${e.message}` : ''}`);
@@ -177,6 +204,7 @@ export class SurrealDbService {
    * @return The authentication token.
    */
   async signin(vars: AnyAuth): Promise<string> {
+    await this.checkConnectionAndTryReconnect();
     return await this.db.signin(vars).catch(() => { throw new ResponseError('signup error'); });
   }
 
@@ -185,6 +213,7 @@ export class SurrealDbService {
    * @param token - The JWT authentication token.
    */
   async authenticate(token: string): Promise<true> {
+    await this.checkConnectionAndTryReconnect();
     return await this.db.authenticate(token);
   }
 
@@ -192,6 +221,7 @@ export class SurrealDbService {
    * Invalidates the authentication for the current connection.
    */
   async invalidate(): Promise<true> {
+    await this.checkConnectionAndTryReconnect();
     return await this.db.invalidate();
   }
 
@@ -201,6 +231,7 @@ export class SurrealDbService {
    * @param value - Assigns the value to the variable name.
    */
   async let(variable: string, value: any): Promise<true> {
+    await this.checkConnectionAndTryReconnect();
     return await this.db.let(variable, value);
   }
 
@@ -209,6 +240,7 @@ export class SurrealDbService {
    * @param key - Specifies the name of the variable.
    */
   async unset(variable: string): Promise<true> {
+    await this.checkConnectionAndTryReconnect();
     return this.db.unset(variable);
   }
 
@@ -220,6 +252,7 @@ export class SurrealDbService {
    * @returns A unique subscription ID
    */
   async live<Result extends Record<string, unknown> | Patch = Record<string, unknown>>(table: RecordIdRange | Table | string, callback?: LiveHandler<Result>, diff?: boolean): Promise<Uuid> {
+    await this.checkConnectionAndTryReconnect();
     return (await this.db.live<Result>(table, callback));
   }
 
@@ -229,6 +262,7 @@ export class SurrealDbService {
    * @param callback - Callback function that receives updates.
    */
   async subscribeLive<Result extends Record<string, unknown> | Patch = Record<string, unknown>>(queryUuid: Uuid, callback: LiveHandler<Record<string, unknown>>): Promise<void> {
+    await this.checkConnectionAndTryReconnect();
     return await this.db.subscribeLive<Result>(queryUuid, callback);
   }
 
@@ -238,6 +272,7 @@ export class SurrealDbService {
    * @param callback - The previously subscribed callback function.
    */
   async unSubscribeLive<Result extends Record<string, unknown> | Patch = Record<string, unknown>>(queryUuid: Uuid, callback: LiveHandler<Result>): Promise<void> {
+    await this.checkConnectionAndTryReconnect();
     return await this.db.unSubscribeLive<Result>(queryUuid, callback);
   }
 
@@ -246,6 +281,7 @@ export class SurrealDbService {
    * @param queryUuid - The query that you want to kill.
    */
   async kill(queryUuid: Uuid | readonly Uuid[]): Promise<void> {
+    await this.checkConnectionAndTryReconnect();
     return this.db.kill(queryUuid);
   }
 
@@ -255,6 +291,7 @@ export class SurrealDbService {
    * @param bindings - Assigns variables which can be used in the query.
    */
   async query<T extends unknown[]>(...args: QueryParameters): Promise<Prettify<T>> {
+    await this.checkConnectionAndTryReconnect();
     return await this.db.query<T>(...args);
   }
 
@@ -265,6 +302,7 @@ export class SurrealDbService {
    * @borrows https://chatgpt.com/c/6745f7e3-bd4c-8004-b607-2d4d747773a5
    */
   async queryRaw<T extends unknown[]>(...params: [prepared: PreparedQuery, gaps?: Array<Fill<unknown>>]): Promise<Prettify<MapQueryResult<T>>> {
+    await this.checkConnectionAndTryReconnect();
     return await this.db.queryRaw<T>(...params);
   }
 
@@ -275,6 +313,7 @@ export class SurrealDbService {
    */
   async select<T extends { [x: string]: unknown; }>(thing: RecordId$1 | RecordIdRange | Table | string)
     : Promise<ActionResult<T> | Promise<Array<ActionResult<T>>>> {
+    await this.checkConnectionAndTryReconnect();
     if (thing.toString().split(':').length === 2) {
       // if is a recordId
       await this.thingExists(thing.toString());
@@ -291,6 +330,7 @@ export class SurrealDbService {
    * @param data - The document / record data to insert.
    */
   async create<T extends { [x: string]: unknown; id: RecordId<string> }, U extends T>(thing: string | Table<string>, data?: any): Promise<Array<{ [x: string]: unknown; id: RecordId<string>; }>> {
+    await this.checkConnectionAndTryReconnect();
     return await this.db.create<T, U>(await this.recordIdFromStringThing(thing as string), data);
   }
 
@@ -302,6 +342,7 @@ export class SurrealDbService {
    * @param data - The document / record data to insert.
    */
   // async create<T extends Record<string, unknown>>(
+  //   await this.checkConnectionAndTryReconnect();
   //   thing: string | Table<string>, data?: Omit<T, 'id'>): Promise<Array<T & { id: RecordId$1<string> }>> {
   //   return await this.db.create(await this.recordIdFromStringThing(thing as string), data);
   // }
@@ -312,6 +353,7 @@ export class SurrealDbService {
    * @param data - The document(s) / record(s) to insert.
    */
   async insert<T extends { [x: string]: unknown; id: RecordId<string> }, U extends T>(thing: string | Table<string>, data?: any): Promise<Array<{ [x: string]: unknown; id: RecordId<string>; }>> {
+    await this.checkConnectionAndTryReconnect();
     return await this.db.insert<T, U>(thing, data);
   }
 
@@ -321,6 +363,7 @@ export class SurrealDbService {
    * @param data - The document(s) / record(s) to insert.
    */
   async insertRelation<T extends { [x: string]: unknown; id: RecordId<string> }, U extends T = T>(table: string | Table<string>, data?: any): Promise<Array<ActionResult<T>>> {
+    await this.checkConnectionAndTryReconnect();
     return await this.db.insertRelation<T, U>(table, data);
   }
 
@@ -332,6 +375,7 @@ export class SurrealDbService {
    * @param data - The document / record data to insert.
    */
   async update<T extends { [x: string]: unknown; id: RecordId<string> }, U extends T>(thing: RecordIdRange | Table | string, data: U): Promise<ActionResult<T> | Array<ActionResult<T>>> {
+    await this.checkConnectionAndTryReconnect();
     if (thing.toString().split(':').length === 2) {
       // if is a recordId
       await this.thingExists(thing.toString());
@@ -350,6 +394,7 @@ export class SurrealDbService {
    * @param data - The document / record data to insert.
    */
   async upsert<T extends { [x: string]: unknown; id: RecordId<string> }, U extends T>(thing: string | Table<string> | RecordIdRange<string>, data?: any): Promise<ActionResult<T> | Array<ActionResult<T>>> {
+    await this.checkConnectionAndTryReconnect();
     if (thing.toString().split(':').length === 2) {
       // if is a recordId
       await this.thingExists(thing.toString());
@@ -368,6 +413,7 @@ export class SurrealDbService {
    * @param data - The document / record data to insert.
    */
   async merge<T extends { [x: string]: unknown; id: RecordId<string> }, U extends T>(thing: string | Table<string> | RecordIdRange<string>, data?: any): Promise<ActionResult<T> | Array<ActionResult<T>>> {
+    await this.checkConnectionAndTryReconnect();
     if (thing.toString().split(':').length === 2) {
       // if is a recordId
       await this.thingExists(thing.toString());
@@ -386,6 +432,7 @@ export class SurrealDbService {
    * @param data - The JSON Patch data with which to modify the records.
    */
   async patch<T extends { [x: string]: unknown; id: RecordId<string> }>(thing: string | Table<string> | RecordIdRange<string>, data?: any): Promise<ActionResult<T> | Array<ActionResult<T>>> {
+    await this.checkConnectionAndTryReconnect();
     if (thing.toString().split(':').length === 2) {
       // if is a recordId
       await this.thingExists(thing.toString());
@@ -401,6 +448,7 @@ export class SurrealDbService {
    * @param thing - The table name or a record ID to select.
    */
   async delete<T extends { [x: string]: unknown; id: RecordId<string> }>(thing: string | Table<string> | RecordIdRange<string>): Promise<ActionResult<T> | Array<ActionResult<T>>> {
+    await this.checkConnectionAndTryReconnect();
     if (thing.toString().split(':').length === 2) {
       // if is a recordId
       await this.thingExists(thing.toString());
@@ -416,6 +464,7 @@ export class SurrealDbService {
    * @example `surrealdb-2.1.0`
    */
   async version(): Promise<string> {
+    await this.checkConnectionAndTryReconnect();
     return await this.db.version();
   }
 
@@ -436,6 +485,7 @@ export class SurrealDbService {
   async run<T>(name: string, version: string, args?: unknown[]): Promise<T>;
   // Implementation
   async run<T>(name: string, versionOrArgs?: string | unknown[], args?: unknown[]): Promise<T> {
+    await this.checkConnectionAndTryReconnect();
     // Handle the arguments based on their types
     if (Array.isArray(versionOrArgs)) {
       // Called as run(name, args)
@@ -459,6 +509,7 @@ export class SurrealDbService {
     to: string | RecordId$1 | RecordId$1[],
     data?: U)
     : Promise<T> {
+    await this.checkConnectionAndTryReconnect();
     return await this.db.relate<T, U>(from, thing, to, data);
   }
 
@@ -468,6 +519,7 @@ export class SurrealDbService {
    * @param params - Parameters for the message.
    */
   async rpc<Result>(method: string, params?: unknown[]): Promise<RpcResponse<Result>> {
+    await this.checkConnectionAndTryReconnect();
     return await this.db.rpc<Result>(method, params);
   }
 
@@ -476,6 +528,7 @@ export class SurrealDbService {
    * @param options - Export configuration options
    */
   async export(options?: Partial<ExportOptions>): Promise<string> {
+    await this.checkConnectionAndTryReconnect();
     return await this.db.export(options);
   }
 }

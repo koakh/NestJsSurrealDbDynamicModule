@@ -18,6 +18,6 @@ async function bootstrap() {
   // start server
   await app.listen(graphqlServerPort);
   Logger.log(`Application is running on: ${await app.getUrl()}`, context);
-  Logger.log(`using surrealDb host: ${configService.get('SURREALDB_URL')}`, context);
+  Logger.log(`Using surrealDb host: ${configService.get('SURREALDB_URL')}`, context);
 }
 bootstrap();

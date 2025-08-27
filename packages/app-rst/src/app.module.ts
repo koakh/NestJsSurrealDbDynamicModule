@@ -24,6 +24,7 @@ import { UserService } from './user/user.service';
         database: configService.get('surrealDbDatabase'),
         username: configService.get('surrealDbUsername'),
         password: configService.get('surrealDbPassword'),
+        initSurrealDbThrowError: configService.get('surrealdbInitSurrealDbThrowError'),
         // userServiceAbstract
         userService,
       }),
