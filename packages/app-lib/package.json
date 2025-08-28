@@ -1,6 +1,6 @@
 {
   "name": "@koakh/nestjs-surrealdb",
-  "version": "0.1.18",
+  "version": "0.1.19",
   "description": "SurrealDb NestJs wrapper driver",
   "author": "Mário Monteiro <marioammonteiro@gmail.com>",
   "license": "UNLICENSED",

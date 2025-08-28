@@ -59,6 +59,5 @@ $ cd packages/app-lib
 # comment `"@koakh/nestjs-surrealdb": "workspace:^"` on `packages/app-rst/package.json` first
 $ npm run version:patch --legacy-peer-deps
 # uncomment `"@koakh/nestjs-surrealdb": "workspace:^"` on `packages/app-rst/package.json` first
-$ cd packages/app-rst && yarn install --mode=skip-build
 $ npm run version:publish
 ```
