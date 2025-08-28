@@ -32,7 +32,7 @@ export class SurrealDbService {
           // in first connection fails, start reconnection process
           this.reconnectTimeoutInterval = setInterval(() => {
             if (this.db && this.db.status) {
-              Logger.log(`Re-connect to surrealDb, current status: ${this.db.status}`, SurrealDbService.name);
+              Logger.log(`Try reconnecting to surrealDb, current status: ${this.db.status}`, SurrealDbService.name);
             } else {
               Logger.log(`Connect to surrealDb...`, SurrealDbService.name);
             }
