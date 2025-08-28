@@ -8,4 +8,5 @@ export const configuration = (): EnvironmentVariables => ({
   surrealDbUsername: process.env.SURREALDB_USERNAME || 'root',
   surrealDbPassword: process.env.SURREALDB_PASSWORD || 'root',
   surrealdbInitSurrealDbThrowError: process.env.SURREALDB_INIT_SURREAL_DB_THROW_ERROR === 'true' ? true : false,
+  surrealdbReconnectTimeoutInterval: process.env.SURREALDB_RECONNECT_TIMEOUT_INTERVAL ? Number(process.env.SURREALDB_RECONNECT_TIMEOUT_INTERVAL) : 60000,
 });

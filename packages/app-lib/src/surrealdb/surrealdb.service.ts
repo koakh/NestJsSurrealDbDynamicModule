@@ -2,7 +2,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 // tslint:disable-next-line:max-line-length
 import { AccessRecordAuth, ActionResult, AnyAuth, default as Auth, ExportOptions, Fill, LiveHandler, MapQueryResult, Patch, PreparedQuery, Prettify, QueryParameters, RecordId, RecordIdRange, ResponseError, RpcResponse, ScopeAuth, StringRecordId, default as Surreal, Table, Uuid } from 'surrealdb';
 import { UserServiceAbstract } from './surrealdb.abstracts';
-import { RECONNECT_TIMEOUT_INTERVAL, SURREALDB_MODULE_OPTIONS, SURREALDB_MODULE_USER_SERVICE, adminCurrentUser } from './surrealdb.constants';
+import { SURREALDB_MODULE_OPTIONS, SURREALDB_MODULE_USER_SERVICE, adminCurrentUser } from './surrealdb.constants';
 import { SurrealDbModuleOptions } from './surrealdb.interfaces';
 import { RecordId$1, SurrealDbUser } from './types';
 
@@ -23,14 +23,24 @@ export class SurrealDbService {
     // private readonly appService: AppServiceAbstract,
   ) {
     if (!config.initSurrealDb || !config.initSurrealDb === false) {
-      this.reconnectTimeoutInterval = setInterval(() => {
-        if (this.db && this.db.status) {
-          Logger.log(`Re-connect to surrealdb, current status: ${this.db.status}`, SurrealDbService.name);
-        } else {
-          Logger.log(`Connect to surrealdb...`, SurrealDbService.name);
+      const asyncInitSurrealDb = async () => {
+        // try connection on boot
+        const live = await this.initSurrealDb(config.initSurrealDbThrowError);
+        // if boot connection failed start surrealdb reconnection
+        if (!live) {
+          // Logger.log('Start surrealDb reconnection...', SurrealDbService.name);
+          // in first connection fails, start reconnection process
+          this.reconnectTimeoutInterval = setInterval(() => {
+            if (this.db && this.db.status) {
+              Logger.log(`Re-connect to surrealDb, current status: ${this.db.status}`, SurrealDbService.name);
+            } else {
+              Logger.log(`Connect to surrealDb...`, SurrealDbService.name);
+            }
+            this.initSurrealDb(config.initSurrealDbThrowError);
+          }, this.config.surrealdbReconnectTimeoutInterval);
         }
-        this.initSurrealDb(config.initSurrealDbThrowError);
-      }, RECONNECT_TIMEOUT_INTERVAL);
+      };
+      asyncInitSurrealDb();
     }
   }
 
@@ -66,7 +76,7 @@ export class SurrealDbService {
   // initSurrealDb
 
   private async initSurrealDb(throwError: boolean = true) {
-    await this.getDb(throwError);
+    return await this.getDb(throwError);
   }
 
   private async getDb(throwError: boolean = true): Promise<Surreal> {
@@ -94,7 +104,7 @@ export class SurrealDbService {
       // in new version surrealdb v2.3.7, this is required
       // await this.db.signin({ username, password });
       // wait for the connection to the database to succeed
-      Logger.verbose(`surrealdb database is ready url: ${url}, namespace: ${namespace}, database: ${database}`, SurrealDbService.name);
+      Logger.verbose(`surrealDb database is ready url: ${url}, namespace: ${namespace}, database: ${database}`, SurrealDbService.name);
       await this.db.ready;
       clearTimeout(this.reconnectTimeoutInterval);
       return this.db;

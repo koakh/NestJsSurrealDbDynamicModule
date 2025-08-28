@@ -6,4 +6,5 @@ export interface EnvironmentVariables {
   surrealDbUsername: string;
   surrealDbPassword: string;
   surrealdbInitSurrealDbThrowError: boolean;
+  surrealdbReconnectTimeoutInterval: number;
 }

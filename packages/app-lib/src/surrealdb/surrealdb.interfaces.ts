@@ -11,4 +11,5 @@ export interface SurrealDbModuleOptions {
   initSurrealDb?: boolean;
   // this will be used to prevent throw error on consumer apps, ex when micropal is enabled and surrealdb is offline by some unknown reason to prevent c3-backend to crash on boot
   initSurrealDbThrowError?: boolean;
+  surrealdbReconnectTimeoutInterval: number;
 }
