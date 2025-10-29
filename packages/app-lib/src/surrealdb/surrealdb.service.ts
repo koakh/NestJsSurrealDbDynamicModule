@@ -22,14 +22,6 @@ export class SurrealDbService {
     // @Inject(APP_SERVICE)
     // private readonly appService: AppServiceAbstract,
   ) {
-
-
-
-
-
-
-
-
     if (config.initSurrealDb === true) {
       // Logger.log(`config.initSurrealDb: ${config.initSurrealDb}`, SurrealDbService.name);
       const asyncInitSurrealDb = async () => {
