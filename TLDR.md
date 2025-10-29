@@ -20,7 +20,7 @@ cd ../..
 # term1
 $ yarn surreal:docker
 
-# term2: init database (required for useres postSignUp and postSignIn)
+# term2: init database (required for users postSignUp and postSignIn)
 $ yarn surreal:initdb
 
 # term3: launch lib dev
@@ -61,3 +61,35 @@ $ npm run version:patch --legacy-peer-deps
 # uncomment `"@koakh/nestjs-surrealdb": "workspace:^"` on `packages/app-rst/package.json` first
 $ npm run version:publish
 ```
+
+## Run On c3-backend
+
+best way to work with backend is just a combination of `yarn yalc:publish` and `npm run start:debug:yalc`
+
+```shell
+# term1: launch lib dev
+$ cd packages/app-lib/
+$ yarn app-lib:dev
+
+# add a breakpoint here
+# if (!config.initSurrealDb || !config.initSurrealDb === false) {
+```
+
+launch debugger with F5, this will consumer rest app
+
+to use it in c3-backend
+
+```shell
+# in project root
+$ yarn app-lib:build
+$ yarn yalc:publish
+```
+
+now launch backend  with
+
+```shell
+# term2: launch c3-backend
+$ start:debug:yalc
+```
+
+this will assume changes in code

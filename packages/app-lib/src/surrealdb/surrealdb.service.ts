@@ -22,7 +22,16 @@ export class SurrealDbService {
     // @Inject(APP_SERVICE)
     // private readonly appService: AppServiceAbstract,
   ) {
-    if (!config.initSurrealDb || !config.initSurrealDb === false) {
+
+
+
+
+
+
+
+
+    if (config.initSurrealDb === true) {
+      // Logger.log(`config.initSurrealDb: ${config.initSurrealDb}`, SurrealDbService.name);
       const asyncInitSurrealDb = async () => {
         // try connection on boot
         const live = await this.initSurrealDb(config.initSurrealDbThrowError);
