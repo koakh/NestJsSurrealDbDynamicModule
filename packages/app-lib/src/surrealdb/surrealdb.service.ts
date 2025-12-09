@@ -69,6 +69,12 @@ export class SurrealDbService {
    * shared function to check and try reConnect connection, before launch any surreal wrapper function
    */
   async checkConnectionAndTryReconnect() {
+    // if not initial initialized by backend in first boot, initialize it after
+    // ex if module is initialized with initSurrealDb: false, and after it receives calls, for ex after iso boot, and we activate the device,
+    // the module is not initialized when we get the infamous error `Error: Cannot read properties of undefined (reading 'ping')` this will initialize it without need for a backend restart
+    if (!this.db) {
+      await this.initSurrealDb(false).catch();
+    }
     return await this.db.ping().catch(async () => {
       await this.initSurrealDb(false).catch();
     });

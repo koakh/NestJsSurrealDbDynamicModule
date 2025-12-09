@@ -15,6 +15,7 @@
     "// app-lib": "::::::::::::::::::::::::::::::::::::::::::::::::::::::::::",
     "app-lib:dev": "yarn --cwd packages/app-lib dev",
     "app-lib:build": "yarn --cwd packages/app-lib build",
+    "app-lib:yalc:publish": "yarn --cwd packages/app-lib yalc:publish",
     "app-lib:patch": "yarn --cwd packages/app-lib version:patch",
     "app-lib:publish": "yarn --cwd packages/app-lib version:publish",
     "// app-rst": "::::::::::::::::::::::::::::::::::::::::::::::::::::::::::",
