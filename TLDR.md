@@ -1,8 +1,23 @@
 # TLDR
 
+## Required Node > v16.15.0 else
+
+2026-01-13 12:23:04
+
+```shell
+$ node -v
+v16.15.0
+
+[Nest] 69041  - 01/13/2026, 11:45:21 AM   ERROR [SurrealDbService] Failed to connect to SurrealDB at url: http://127.0.0.1:8888/rpc, namespace: micropal, database: micropal
+ReferenceError: fetch is not defined
+```
+
+
 ## Checkout Project
 
 ```shell
+# required node 22.14
+$ nvh i 22.14
 $ git clone https://github.com/koakh/NestJsSurrealDbDynamicModule.git
 $ yarn install --mode=skip-build
 # term1 : optional, only if don't connect to c3-system-stack, see `packages/app-rst/.env`
