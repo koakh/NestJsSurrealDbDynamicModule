@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 DT=$(date +%Y-%m-%d-%H-%M)
 DIR=.bak
