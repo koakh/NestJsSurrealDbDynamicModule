@@ -23,14 +23,6 @@
     "docker:app-rst:push": "yarn --cwd packages/app-rst docker:push",
     "docker:app-rst:up": "yarn --cwd packages/app-rst docker:up",
     "docker:app-rst:down": "yarn --cwd packages/app-rst docker:down",
-    "// app-gql": "::::::::::::::::::::::::::::::::::::::::::::::::::::::::::",
-    "start:app-gql": "yarn --cwd packages/app-gql start:debug",
-    "docker:app-gql:build": "yarn --cwd packages/app-gql docker:build",
-    "docker:app-gql:push": "yarn --cwd packages/app-gql docker:push",
-    "docker:app-gql:up": "yarn --cwd packages/app-gql docker:up",
-    "docker:app-gql:down": "yarn --cwd packages/app-gql docker:down",
-    "// tutorial-graphql": "::::::::::::::::::::::::::::::::::::::::::::::::::::::::::",
-    "start:tutorial-graphql": "yarn --cwd packages/tutorial-graphql start:debug",
     "// end": ":::::::::::::::::::::::::::::::::::: ::::::::::::::::::::::::::"
   },
   "packageManager": "yarn@4.5.3"

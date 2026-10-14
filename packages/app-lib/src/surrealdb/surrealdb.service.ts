@@ -373,6 +373,15 @@ export class SurrealDbService {
     return await this.db.auth<T>() as T | undefined;
   }
 
+  /**
+   * Create a `SurrealApi` instance for invoking SurrealDB 3 user-defined
+   * API endpoints (`api.get('/users')`, `api.post(path, body)`, ...)
+   * @param prefix - Optional path prefix prepended to all calls
+   */
+  api(prefix?: string): unknown {
+    return this.db.api(prefix);
+  }
+
   // session configuration methods
 
   /**

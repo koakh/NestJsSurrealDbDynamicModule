@@ -36,25 +36,13 @@ and don't forget to give a **star** to the the project, and integrations, this "
 
 rest consumer sample app `@koakh/nestjs-surrealdb-rest-demo` locate at `packages/app-rst`
 
-### GraphQL Consumer App
+### WIP packages
 
-graphql consumer sample app `@koakh/nestjs-surrealdb-graphql-demo` locate at `packages/app-gql`
-
-### GraphQL DataLoader Package
-
-graphql consumer sample app `@koakh/nestjs-surrealdb-gql-dataloader` locate at `packages/dataloader`
-
-cloned [tracworx/nestjs-dataloade](https://github.com/tracworx/nestjs-dataloade) to work with nestjs 9 without use `--force` flag
-
-### GraphQL SurrealDb Tutorial
-
-tutorial-graphql `@koakh/nestjs-surrealdb-gql-tutorial` locate at `packages/tutorial-graphql`
-
-- [README](packages/tutorial-graphql/README.md)
+`app-gql`, `app-lib-gql`, `dataloader` and `tutorial-graphql` live in `packages-wip/` and are NOT part of the yarn workspace (upgrade to surrealdb.js v2 pending)
 
 ## Configure Dev Environment
 
-requirements `node` and `npm`
+requirements `node >= 22` and `npm` (SDK v2 uses the global `WebSocket`, Node 22+ required)
 
 this project use yarn workspaces, so start to install yarn and workspace dependencies
 
@@ -113,26 +101,14 @@ $ cd yarn add -D nodemon --mode=skip-build
 
 ### Install SurrealDb
 
-first install SurrealDb. full instruction at [SurrealDB | Install](https://surrealdb.com/install)
-
-#### Install on macOS
+first install the SurrealDB **v3** CLI (a v1 CLI refuses v3 servers). full instruction at [SurrealDB | Install](https://surrealdb.com/install)
 
 ```shell
-$ brew install surrealdb/tap/surreal
+# this repo ships an installer script (downloads v3 to ~/.local/bin)
+$ yarn surreal:install
 ```
 
-#### Install on Linux Distros
-
-```shell
-$ curl -sSf https://install.surrealdb.com | sh
-$ sudo mv /home/c3/.surrealdb/surreal /usr/local/bin
-```
-
-#### Install on Windows
-
-```shell
-$ iwr https://windows.surrealdb.com -useb | iex
-```
+> NOTE: the official `curl -sSf https://install.surrealdb.com | sh` installer currently builds a stale v1-era CDN url (403). the repo script downloads directly from `https://download.surrealdb.com/v3.1.6/surreal-v3.1.6.linux-amd64.tgz`
 
 ### Start SurrealDb Instance
 
@@ -248,20 +224,6 @@ $ docker:app-rst:up
 $ docker:app-rst:down
 ```
 
-### Launch GraphQL Consumer App
+### Launch GraphQL Consumer App / Tutorial App
 
-```shell
-# start dev
-$ yarn start:app-gql
-
-# start docker stack
-$ docker:app-gql:up
-$ docker:app-gql:down
-```
-
-### Launch GraphQL Tutorial Consumer App
-
-```shell
-# start dev
-$ yarn start:tutorial-graphql
-```
+moved to `packages-wip/` (not in the workspace, pending surrealdb.js v2 upgrade) — see `packages-wip/` for their legacy READMEs

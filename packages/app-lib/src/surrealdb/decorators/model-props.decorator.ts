@@ -18,7 +18,7 @@ export const ModelProps = (props: Props): ClassDecorator => {
  * getName(type); // 'Customer'
  * @param type
  */
-// eslint-disable-next-line @typescript-eslint/ban-types
+// eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
 export const getModelProps = (type: Function): string => {
   return (Reflect as any).getMetadata(nameKey, type);
 }
@@ -29,7 +29,6 @@ export const getModelProps = (type: Function): string => {
  * getInstanceModelProps(instance);
  * @param instance
  */
-// eslint-disable-next-line @typescript-eslint/ban-types
-export function getInstanceModelProps(instance: Object): Props {
+export function getInstanceModelProps(instance: object): Props {
   return (Reflect as any).getMetadata(nameKey, instance.constructor);
 }

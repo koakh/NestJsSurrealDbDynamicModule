@@ -1,41 +1,26 @@
 # TLDR
-
+## 
 ```shell
 $ git clone https://github.com/koakh/NestJsSurrealDbDynamicModule.git
+# node >= 22 required (SDK v2 uses the global WebSocket)
 $ yarn install --mode=skip-build
-# term1 : optional, only if don't connect to c3-system-stack, see `packages/app-rst/.env`
-# yarn surreal
-# term2: install local package to start develop
-$ cd packages/app-rst
-# must re-add to prevent missing local package
-$ yarn add @koakh/nestjs-surrealdb --mode=skip-build
 
-# back
-cd ../..
-
-# development environment
-
-# term1
-$ cd packages/app-rst/
+# term1: surrealdb v3 (compose maps it to host port 8001)
 $ yarn surreal:docker
-
-# term2: init database (required for useres postSignUp and postSignIn)
+# install the v3 surreal CLI (one time, into ~/.local/bin)
+$ yarn surreal:install
+# term2: init database (required for postSignUp and postSignIn)
 $ yarn surreal:initdb
 
-# term2
+# term2: build + watch the lib
 $ yarn app-lib:dev
 
-# term3
+# term3: start the consumer app (defaults to ws://127.0.0.1:8001/rpc)
 $ yarn start:app-rst
 ```
 
 ```shell
-$ yarn app-lib:build
-$ yarn yalc:publish
-```
-
-```shell
+# publish
 $ cd packages/app-lib
-$ npm run version:patch
-$ npm run version:publish
+$ npm publish
 ```

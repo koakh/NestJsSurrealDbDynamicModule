@@ -256,7 +256,7 @@ export class SurrealDbController {
   async api(@Req() req: Request) {
     const prefix = '/surrealdb/api';
     const path = req.path.slice(req.path.indexOf(prefix) + prefix.length) || '/';
-    const api = (this.surrealDbService as any).db.api();
+    const api = this.surrealDbService.api() as any;
     switch (req.method) {
       case 'POST':
         return await api.post(path, req.body);
