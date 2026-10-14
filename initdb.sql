@@ -1,3 +1,7 @@
+-- SurrealDB 3.x requires this as the first statement of any import,
+-- it disables events, live queries and field processing for performance
+OPTION IMPORT;
+
 DEFINE NAMESPACE test;
 DEFINE DATABASE test;
 

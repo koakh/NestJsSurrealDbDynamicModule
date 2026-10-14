@@ -12,7 +12,7 @@ services:
     ports:
       - 3030:3030
     # environment:
-    #   SURREALDB_URL: "ws://127.0.0.1:8000/rpc"
+    #   SURREALDB_URL: "ws://127.0.0.1:8001/rpc"
     #   SURREALDB_NAMESPACE: "test"
     #   SURREALDB_DATABASE: "test"
     #   SURREALDB_USERNAME: "root"
@@ -20,7 +20,7 @@ services:
     # command: "node dist/main.js"
 
   nestjs-surrealdb-rest-surrealdb:
-    image: surrealdb/surrealdb:v2.3.7
+    image: surrealdb/surrealdb:v3.1.6
     hostname: surrealdb
     container_name: nestjs-surrealdb-rest-surrealdb
     restart: unless-stopped
@@ -28,4 +28,4 @@ services:
     command: "start --user root --pass root"
     # uncomment to expose surrealdb port
     ports:
-      - 8000:8000
+      - 8001:8000

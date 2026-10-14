@@ -1,6 +1,6 @@
 {
   "name": "@koakh/nestjs-surrealdb",
-  "version": "0.1.17",
+  "version": "0.2.0",
   "description": "SurrealDb NestJs wrapper driver",
   "author": "Mário Monteiro <marioammonteiro@gmail.com>",
   "license": "UNLICENSED",
@@ -10,16 +10,15 @@
     "dist/**/*",
     "*.md"
   ],
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "tsc -w",
     "build": "tsc",
     "prepare": "npm run build",
     "format": "prettier --write \"src/**/*.ts\"",
-    "lint": "tslint -p tsconfig.json -c tslint.json",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:cov": "jest --coverage",
-    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "lint": "eslint \"src/**/*.ts\" --fix",
     "yalc:publish": "npm run build && yalc publish",
     "version:patch": "npm run build && npm version patch && echo 'don`t forget to bump version on consumer apps and run `yarn install --mode=skip-build`'",
     "version:publish": "npm publish"
@@ -37,47 +36,27 @@
   },
   "bugs": "https://github.com/koakh/NestJsSurrealDbDynamicModule.git",
   "dependencies": {
-    "@golevelup/nestjs-modules": "0.8.0",
-    "@nestjs/config": "4.0.1",
-    "babel-core": "6.26.3",
-    "class-validator": "0.14.1",
-    "rxjs": "7.8.1",
-    "surrealdb": "1.1.0",
-    "ts-morph": "26.0.0",
-    "ws": "8.18.0"
-  },
-  "// devDependenciesNotUsed": {
-    "jest": "29.7.0",
-    "@types/jest": "29.5.14",
-    "@nestjs/testing": "11.0.12",
-    "ts-jest": "29.2.5"
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.15.1",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2",
+    "surrealdb": "^2.1.1",
+    "tslib": "^2.8.1"
   },
   "devDependencies": {
-    "@nestjs/common": "11.0.12",
-    "@nestjs/core": "11.0.12",
-    "@types/node": "24.1.0",
-    "@types/ws": "8",
-    "nodemon": "3.1.7",
-    "prettier": "3.4.0",
-    "supertest": "7.0.0",
-    "ts-node": "10.9.2",
-    "tsc-watch": "7.1.1",
-    "tsconfig-paths": "4.2.0",
-    "tslint": "5.20.1",
-    "typescript": "5.7.2"
-  },
-  "jest": {
-    "moduleFileExtensions": [
-      "js",
-      "json",
-      "ts"
-    ],
-    "rootDir": "src",
-    "testRegex": ".spec.ts$",
-    "transform": {
-      "^.+\\.(t|j)s$": "ts-jest"
-    },
-    "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
+    "@nestjs/common": "^11.2.7",
+    "@nestjs/core": "^11.2.7",
+    "@types/node": "^22.10.0",
+    "@typescript-eslint/eslint-plugin": "^8.16.0",
+    "@typescript-eslint/parser": "^8.16.0",
+    "eslint": "^9.15.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.2.1",
+    "nodemon": "^3.1.14",
+    "prettier": "^3.9.10",
+    "ts-node": "^10.9.2",
+    "tsc-watch": "^7.1.1",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^6.0.0"
   }
 }

@@ -38,3 +38,7 @@ database/
 
 @temp-app-surrealdb-graphql/
 packages/app-rst/.env
+
+# tsc incremental build state
+*.tsbuildinfo
+export.surql

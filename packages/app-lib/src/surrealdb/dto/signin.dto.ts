@@ -1,33 +1,30 @@
-import { IsOptional, IsString } from 'class-validator';
+import { IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
 
 export declare class SigninDto {
-  // The username of the database user
-  // required for root, namespace & database
+  // system user credentials (root, namespace or database user)
   @IsString()
-  username: string;
+  @IsOptional()
+  username?: string;
 
-  // The password of the database user
-  // required for root, namespace & database
   @IsString()
-  password: string;
+  @IsOptional()
+  password?: string;
 
-  // The namespace to sign in to
-  // required for database & scope/access
+  // record access authentication
   @IsString()
-  namespace: string;
+  @IsOptional()
+  namespace?: string;
 
-  // The database to sign in to
-  // required for scope/access
   @IsString()
+  @IsOptional()
   database?: string;
 
-  // The scope to sign in to. Also pass any variables used in the scope.
-  // Only supported in SurrealDB 1.x
+  // the access method to sign in to, also pass any variables used in the access
   @IsString()
-  scope?: string;
-
-  // The access to sign in to. Also pass any variables used in the access.
-  // Only supported from SurrealDB 2.x onwards
-  @IsString()
+  @IsOptional()
   access?: string;
+
+  @IsObject()
+  @IsOptional()
+  variables?: { [key: string]: any };
 }

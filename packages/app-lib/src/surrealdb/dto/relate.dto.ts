@@ -1,11 +1,20 @@
-import { IsObject, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsObject, IsOptional, IsString } from 'class-validator';
 
 export declare class RelateDto {
   @IsString()
-  from: string;
+  @IsOptional()
+  from?: string;
+
+  @IsArray()
+  @IsOptional()
+  fromMany?: string[];
 
   @IsString()
   to: string;
+
+  @IsArray()
+  @IsOptional()
+  toMany?: string[];
 
   @IsObject()
   @IsOptional()

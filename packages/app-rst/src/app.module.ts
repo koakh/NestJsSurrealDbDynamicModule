@@ -17,7 +17,8 @@ import { UserService } from './user/user.service';
       isGlobal: true,
       load: [configuration],
     }),
-    SurrealDbModule.forRootAsync(SurrealDbModule, {
+    // since v0.2.0 (ConfigurableModuleBuilder) no need to pass the class ref as first argument
+    SurrealDbModule.forRootAsync({
       useFactory: async (configService: ConfigService, userService: UserService) => ({
         url: configService.get('surrealDbUrl'),
         namespace: configService.get('surrealDbNamespace'),

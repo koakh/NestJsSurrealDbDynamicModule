@@ -66,9 +66,9 @@ this project use yarn workspaces, so start to install yarn and workspace depende
 $ nvh i 20
 $ node -v
 v20.18.1
-# start with the basic packages, to preven infinite install dependencies problem
+# start with the basic packages, to prevent infinite install dependencies problem
 $ mv packages/{app-gql,dataloader} packages_standby/
-# clena up
+# clean up
 $ sudo rm node_modules/ -Rf
 # remove old yarn.lock if exists
 $ rm yarn.lock
@@ -159,7 +159,7 @@ Y88b  d88P Y88b 888 888     888     Y8b.     888  888 888 888  .d88P 888   d88P
 2024-11-25T11:47:45.550552Z  WARN surrealdb::core::kvs::ds: Credentials were provided, but existing root users were found. The root user 'root' will not be created
 2024-11-25T11:47:45.550748Z  WARN surrealdb::core::kvs::ds: Consider removing the --user and --pass arguments from the server start command
 2024-11-25T11:47:45.554246Z  INFO surrealdb::net: Listening for a system shutdown signal.
-2024-11-25T11:47:45.554092Z  INFO surrealdb::net: Started web server on 0.0.0.0:8000
+2024-11-25T11:47:45.554092Z  INFO surrealdb::net: Started web server on 0.0.0.0:8001
 ```
 
 ## Init surrealDb Database
@@ -173,7 +173,7 @@ $ yarn surreal:initdb
 [2022-09-05 23:07:01] INFO  surrealdb::cli The SQL file was imported successfully
 
 # check info for db
-$ echo "INFO FOR DB;" | surreal sql --json --hide-welcome --pretty --conn http://localhost:8000 --user root --pass root --ns test --db test
+$ echo "INFO FOR DB;" | surreal sql --json --hide-welcome --pretty --conn http://localhost:8001 --user root --pass root --ns test --db test
 -- Query 1 (execution time: 609.242µs
 {
   "accesses": {
@@ -192,7 +192,7 @@ $ echo "INFO FOR DB;" | surreal sql --json --hide-welcome --pretty --conn http:/
 }
 
 # check info for user
-$ echo "INFO FOR TABLE user;" | surreal sql --json --hide-welcome --pretty --conn http://localhost:8000 --user root --pass root --ns test --db test
+$ echo "INFO FOR TABLE user;" | surreal sql --json --hide-welcome --pretty --conn http://localhost:8001 --user root --pass root --ns test --db test
 
 -- Query 1 (execution time: 316.537µs
 {
@@ -237,7 +237,7 @@ $ yarn app-lib:dev
 $ yarn start:app-rst
 [Nest] 284274  - 11/27/2024, 11:02:44 AM     LOG [NestApplication] Nest application successfully started +2ms
 [Nest] 284274  - 11/27/2024, 11:02:44 AM     LOG [NestApplication] Application is running on: http://[::1]:3030
-[Nest] 284274  - 11/27/2024, 11:02:44 AM     LOG [NestApplication] using surrealDb host: ws://127.0.0.1:8000/rpc
+[Nest] 284274  - 11/27/2024, 11:02:44 AM     LOG [NestApplication] using surrealDb host: ws://127.0.0.1:8001/rpc
 ```
 
 > launch debug here, it will work with consumer app and lib/package

@@ -114,8 +114,8 @@ Y88b  d88P Y88b 888 888     888     Y8b.     888  888 888 888  .d88P 888   d88P
 [2022-09-05 23:05:47] INFO  surrealdb::dbs Database strict mode is disabled
 [2022-09-05 23:05:47] INFO  surrealdb::kvs Starting kvs store at file:mydb
 [2022-09-05 23:05:47] INFO  surrealdb::kvs Started kvs store at file:mydb
-[2022-09-05 23:05:47] INFO  surrealdb::net Starting web server on 0.0.0.0:8000
-[2022-09-05 23:05:47] INFO  surrealdb::net Started web server on 0.0.0.0:8000
+[2022-09-05 23:05:47] INFO  surrealdb::net Starting web server on 0.0.0.0:8001
+[2022-09-05 23:05:47] INFO  surrealdb::net Started web server on 0.0.0.0:8001
 ```
 
 ## NestJs/Node Prerequisites
@@ -162,7 +162,7 @@ $ rm src/app.controller.spec.ts src/app.controller.ts src/app.service.ts
 ```bash
 GRAPHQL_SERVER_PORT="3030"
 GRAPHQL_AUTO_SCHEMA_FILE='./schema.gql'
-SURREALDB_URL="ws://127.0.0.1:8000/rpc"
+SURREALDB_URL="ws://127.0.0.1:8001/rpc"
 SURREALDB_NAMESPACE="test"
 SURREALDB_DATABASE="test"
 SURREALDB_USERNAME="root"
@@ -817,7 +817,7 @@ $ yarn start:debug
 # outcome
 [Nest] 284274  - 11/27/2024, 11:02:44 AM     LOG [NestApplication] Nest application successfully started +2ms
 [Nest] 284274  - 11/27/2024, 11:02:44 AM     LOG [NestApplication] Application is running on: http://[::1]:3030
-[Nest] 284274  - 11/27/2024, 11:02:44 AM     LOG [NestApplication] using surrealDb host: ws://127.0.0.1:8000/rpc
+[Nest] 284274  - 11/27/2024, 11:02:44 AM     LOG [NestApplication] using surrealDb host: ws://127.0.0.1:8001/rpc
 ```
 
 ## Play with GraphQL API

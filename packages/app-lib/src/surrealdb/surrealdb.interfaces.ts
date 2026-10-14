@@ -1,3 +1,4 @@
+import type { ConnectOptions } from 'surrealdb';
 import { UserServiceAbstract } from './surrealdb.abstracts';
 
 export interface SurrealDbModuleOptions {
@@ -11,4 +12,10 @@ export interface SurrealDbModuleOptions {
   initSurrealDb?: boolean;
   // this will be used to prevent throw error on consumer apps, ex when micropal is enabled and surrealdb is offline by some unknown reason to prevent c3-backend to crash on boot
   initSurrealDbThrowError?: boolean;
+  // surrealdb.js v2 `ConnectOptions` passthrough (all optional)
+  // https://surrealdb.com/docs/reference/javascript/api/types/#connectoptions
+  reconnect?: ConnectOptions['reconnect'];
+  retry?: ConnectOptions['retry'];
+  renewAccess?: boolean;
+  versionCheck?: boolean;
 }

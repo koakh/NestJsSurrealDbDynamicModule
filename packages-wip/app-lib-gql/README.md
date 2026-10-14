@@ -35,7 +35,7 @@ $ rm src/app.controller.spec.ts src/app.controller.ts src/app.service.ts
 ```bash
 GRAPHQL_SERVER_PORT="3030"
 GRAPHQL_AUTO_SCHEMA_FILE='./schema.gql'
-SURREALDB_URL="ws://127.0.0.1:8000/rpc"
+SURREALDB_URL="ws://127.0.0.1:8001/rpc"
 SURREALDB_NAMESPACE="test"
 SURREALDB_DATABASE="test"
 SURREALDB_USERNAME="root"

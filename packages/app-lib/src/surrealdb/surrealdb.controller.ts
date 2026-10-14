@@ -1,22 +1,39 @@
-import { Body, Controller, Delete, Get, Logger, Param, Patch, Post, Put } from '@nestjs/common';
-import { plainToInstance } from 'class-transformer';
-import { ExportOptions, StringRecordId, Uuid } from 'surrealdb';
-import { ConnectDto, DataDto, InsertRelation, InsertRelationDto, RelateDto, SigninDto, SignupDto, UseDto } from './dto';
+import { All, Body, Controller, Delete, Get, Logger, Param, Patch, Post, Put, Query, Req } from '@nestjs/common';
+import type { Request } from 'express';
+import {
+  SurrealTransaction,
+  Features,
+} from 'surrealdb';
+import { AuthenticateDto, ConnectDto, DataDto, GqlDto, QueryDto, RelateDto, SetDto, SigninDto, SignupDto, UpdateDto, UseDto } from './dto';
 import { SurrealDbService } from './surrealdb.service';
 
-const callbackSubscribeLive =
-  // The callback function takes two arguments: the 'action' and 'result' properties
-  (action, result) => {
-    // action can be: 'CREATE', 'UPDATE', 'DELETE' or 'CLOSE'
-    if (action === 'CLOSE') return;
-    Logger.log(`subscribeLive action: ${JSON.stringify(action, undefined, 2)}, result: ${JSON.stringify(result, undefined, 2)}`, SurrealDbController.name);
-  };
+/**
+ * registry of live subscriptions started over REST,
+ * keyed by their live query uuid
+ */
+type LiveSubscriptionLike = {
+  id?: { toString(): string };
+  kill(): Promise<void>;
+  isAlive: boolean;
+  subscribe?: (callback: (action: unknown, result: unknown) => void) => unknown;
+};
+
+const liveCallback = (action, result) => {
+  // action can be: 'CREATE', 'UPDATE', 'DELETE' or 'CLOSE'
+  if (action === 'CLOSE') return;
+  Logger.log(`live action: ${JSON.stringify(action)}, result: ${JSON.stringify(result, undefined, 2)}`, SurrealDbController.name);
+};
 
 @Controller('surrealdb')
 export class SurrealDbController {
+  private readonly liveSubscriptions = new Map<string, LiveSubscriptionLike>();
+  private readonly transactions = new Map<string, SurrealTransaction>();
+
   constructor(
     private readonly surrealDbService: SurrealDbService,
   ) { }
+
+  // connection
 
   @Post('/connect')
   async connect(@Body() { url }: ConnectDto) {
@@ -28,39 +45,162 @@ export class SurrealDbController {
     return await this.surrealDbService.close();
   }
 
-  @Post('/ping')
-  async ping() {
-    return await this.surrealDbService.ping();
+  @Get('/health')
+  async health() {
+    try {
+      await this.surrealDbService.health();
+      return { healthy: true };
+    } catch (error) {
+      // some engines/servers don't implement the health rpc, fall back to connection status
+      return {
+        healthy: this.surrealDbService.getIsConnected(),
+        status: this.surrealDbService.getStatus(),
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+
+  @Get('/status')
+  status() {
+    return {
+      status: this.surrealDbService.getStatus(),
+      isConnected: this.surrealDbService.getIsConnected(),
+    };
+  }
+
+  @Get('/is-connected')
+  isConnected() {
+    return this.surrealDbService.getIsConnected();
+  }
+
+  @Get('/is-feature-supported/:feature')
+  isFeatureSupported(@Param('feature') feature: string) {
+    const features = Features as Record<string, unknown>;
+    if (!(feature in features)) {
+      throw new Error(`Unknown feature '${feature}'. Available: ${Object.keys(features).join(', ')}`);
+    }
+    return this.surrealDbService.isFeatureSupported(features[feature] as any);
+  }
+
+  @Get('/version')
+  async version() {
+    return await this.surrealDbService.version();
   }
 
   @Post('/use')
-  async use(@Body() { namespace: ns, database: db }: UseDto) {
-    return await this.surrealDbService.use(ns, db);
+  async use(@Body() { namespace, database }: UseDto) {
+    return await this.surrealDbService.use(namespace, database);
   }
 
-  @Post('/info')
-  async info() {
-    return await this.surrealDbService.info();
+  // events
+  // note: the unsubscribe function is not kept over REST, this is mostly a debug helper
+
+  @Post('/subscribe/:event')
+  subscribe(@Param('event') event: string) {
+    const unsubscribe = this.surrealDbService.subscribe(event, (...args) => {
+      Logger.log(`event '${event}': ${JSON.stringify(args, undefined, 2)}`, SurrealDbController.name);
+    });
+    return { subscribed: true, event };
   }
 
-  // https://surrealdb.com/docs/sdk/javascript/methods/signup#signup
-  // https://surrealdb.com/docs/sdk/javascript/core/handling-authentication
-  // https://surrealdb.com/docs/sdk/javascript/methods/signup#example-usage
+  // sessions
+
+  @Get('/sessions')
+  async sessions() {
+    return await this.surrealDbService.sessions();
+  }
+
+  @Post('/session')
+  async newSession() {
+    const session = await this.surrealDbService.newSession();
+    return { session: session.session?.toString(), namespace: session.namespace, database: session.database };
+  }
+
+  @Post('/session/fork')
+  async forkSession() {
+    const session = await this.surrealDbService.forkSession();
+    return { session: session.session?.toString(), namespace: session.namespace, database: session.database };
+  }
+
+  @Delete('/session')
+  async closeSession() {
+    return await this.surrealDbService.closeSession();
+  }
+
+  @Post('/reset')
+  async reset() {
+    return await this.surrealDbService.reset();
+  }
+
+  // import / export
+
+  @Post('/import')
+  async import(@Body() importDto: DataDto) {
+    return await this.surrealDbService.import(importDto.data);
+  }
+
+  // https://surrealdb.com/docs/reference/javascript/api/core/surreal#export
+  @Post('/export')
+  async export(@Body() optionsDto?: any) {
+    return await this.surrealDbService.export(optionsDto);
+  }
+
+  @Get('/export-model/:name/:version')
+  async exportModel(@Param('name') name: string, @Param('version') version: string) {
+    return await this.surrealDbService.exportModel(name, version);
+  }
+
+  // transactions
+  // begin returns an id, run queries with `/transaction/:id/query`, then commit or cancel
+
+  @Post('/transaction')
+  async beginTransaction() {
+    const transaction = await this.surrealDbService.beginTransaction();
+    const id = (transaction as any).transaction?.toString() ?? Math.random().toString(36).slice(2);
+    this.transactions.set(id, transaction);
+    return { id };
+  }
+
+  @Post('/transaction/:id/query')
+  async transactionQuery(@Param('id') id: string, @Body() { query, bindings }: QueryDto) {
+    const transaction = this.getTransaction(id);
+    return await transaction.query(query, bindings);
+  }
+
+  @Post('/transaction/:id/commit')
+  async commitTransaction(@Param('id') id: string) {
+    const transaction = this.getTransaction(id);
+    this.transactions.delete(id);
+    return await transaction.commit();
+  }
+
+  @Post('/transaction/:id/cancel')
+  async cancelTransaction(@Param('id') id: string) {
+    const transaction = this.getTransaction(id);
+    this.transactions.delete(id);
+    return await transaction.cancel();
+  }
+
+  private getTransaction(id: string): SurrealTransaction {
+    const transaction = this.transactions.get(id);
+    if (!transaction) {
+      throw new Error(`Transaction not found: ${id}`);
+    }
+    return transaction;
+  }
+
+  // authentication
+
+  // https://surrealdb.com/docs/reference/javascript/api/core/surreal-session#signup
   @Post('/signup')
   async signup(@Body() signupDto: SignupDto) {
-    // access supported from SurrealDB 2.x onwards
-    let mode = signupDto.access ? { access: signupDto.access } : { access: signupDto.scope };
-    const payload = { ...signupDto, ...mode, }
-    // Logger.log(`payload: [${JSON.stringify(payload, undefined, 2)}]`, SurrealDbController.name);
-    return await this.surrealDbService.signup(payload);
+    return await this.surrealDbService.signup(signupDto as any);
   }
 
-  // https://surrealdb.com/docs/sdk/javascript/methods/signin#example-usage    
+  // https://surrealdb.com/docs/reference/javascript/api/core/surreal-session#signin
   @Post('/signin')
   async signin(@Body() signinDto: SigninDto) {
-    let mode = signinDto.access ? { access: signinDto.access } : { access: signinDto.scope };
-    const payload = { ...signinDto, ...mode, }
-    return await this.surrealDbService.signin(payload);
+    return await this.surrealDbService.signin(signinDto as any);
   }
 
   @Post('/invalidate')
@@ -69,118 +209,40 @@ export class SurrealDbController {
   }
 
   @Post('/authenticate')
-  async authenticate(@Body() { token }) {
-    return await this.surrealDbService.authenticate(token);
+  async authenticate(@Body() { token, refresh }: AuthenticateDto) {
+    return await this.surrealDbService.authenticate(refresh ? { access: token, refresh } : token);
   }
 
-  @Post('/let')
-  async let(@Body() { variable, value }) {
-    return await this.surrealDbService.let(variable, value);
+  // get the currently authenticated record user (v2 replacement for v1 `info`)
+  @Get('/auth')
+  async auth() {
+    return await this.surrealDbService.auth();
+  }
+
+  // session configuration
+
+  // v2 replacement for v1 `let`
+  @Post('/set')
+  async set(@Body() { variable, value }: SetDto) {
+    return await this.surrealDbService.set(variable, value);
   }
 
   @Post('/unset')
-  async unset(@Body() { variable }) {
+  async unset(@Body() { variable }: { variable: string }) {
     return await this.surrealDbService.unset(variable);
   }
 
-  @Post('/live/:table')
-  async live(@Param('table') table: string) {
-    const callback =
-      // The callback function takes two arguments: the 'action' and 'result' properties
-      (action, result) => {
-        // action can be: 'CREATE', 'UPDATE', 'DELETE' or 'CLOSE'
-        if (action === 'CLOSE') return;
-        Logger.log(`live action: ${JSON.stringify(action, undefined, 2)}, result: ${JSON.stringify(result, undefined, 2)}`, SurrealDbController.name);
-      };
-    return await this.surrealDbService.live(table, callback);
-  }
-
-  @Post('/subscribe-live/:queryUuid')
-  async subscribeLive(@Param('queryUuid') queryUuid: Uuid) {
-    return await this.surrealDbService.subscribeLive(queryUuid, callbackSubscribeLive);
-  }
-
-  @Post('/unsubscribe-live/:queryUuid')
-  async unSubscribeLive(@Param('queryUuid') queryUuid: Uuid) {
-    return await this.surrealDbService.unSubscribeLive(queryUuid, callbackSubscribeLive);
-  }
-
-  @Post('/kill/:queryUuid')
-  async kill(@Param('queryUuid') queryUuid: Uuid | readonly Uuid[]) {
-    return await this.surrealDbService.kill(queryUuid);
-  }
+  // queries
 
   @Post('/query')
-  async query(@Body() { query, bindings }) {
-    return await this.surrealDbService.query(query, bindings);
+  async query(@Body() { query, bindings, mode }: QueryDto) {
+    return await this.surrealDbService.query(query, bindings, mode);
   }
 
-  @Post('/query-raw')
-  async queryRaw(@Body() { query, bindings }) {
-    return await this.surrealDbService.queryRaw(query, bindings);
-  }
-
-  @Get('/select/:thing')
-  async select(@Param('thing') thing: string) {
-    return await this.surrealDbService.select(thing);
-  }
-
-  @Post('/create/:thing')
-  async create(@Param('thing') thing: string, @Body() createDto: DataDto) {
-    return await this.surrealDbService.create(thing, createDto);
-  }
-
-  @Post('/insert/:thing')
-  async insert(@Param('thing') thing: string, @Body() insertDto: DataDto) {
-    return await this.surrealDbService.insert(thing, insertDto);
-  }
-
-  @Post('/insert-relation/:thing')
-  async insertRelation(@Param('thing') thing: string, @Body() rawPayload: any) {
-    // Logger.log(`Raw Payload: ${JSON.stringify(rawPayload)}`, SurrealDbController.name);
-    // normalize payload to always be an array, this wai it works with arrays and plain objects
-    const payloadArray = Array.isArray(rawPayload) ? rawPayload : [rawPayload];
-    const transformedData = payloadArray.map(item =>
-      plainToInstance(InsertRelation, item, {
-        enableImplicitConversion: true,
-        excludeExtraneousValues: false,
-      })
-    );
-    // used InsertRelationDto here, not in controller
-    const insertRelationDto = new InsertRelationDto();
-    insertRelationDto.data = transformedData;
-    // Logger.log(`Transformed DTO: ${JSON.stringify(insertRelationDto)}`, SurrealDbController.name);
-    return await this.surrealDbService.insertRelation(thing, insertRelationDto.data);
-  }
-
-  @Put('/update/:thing')
-  async update(@Param('thing') thing: string, @Body() updateDto: any) {
-    return await this.surrealDbService.update(thing, updateDto);
-  }
-
-  @Patch('/upsert/:thing')
-  async upsert(@Param('thing') thing: string, @Body() upsertDto: any) {
-    return await this.surrealDbService.upsert(thing, upsertDto);
-  }
-
-  @Post('/merge/:thing')
-  async merge(@Param('thing') thing: string, @Body() upsertDto: any) {
-    return await this.surrealDbService.merge(thing, upsertDto);
-  }
-
-  @Patch('/patch/:thing')
-  async patch(@Param('thing') thing: string, @Body() patchDto: any) {
-    return await this.surrealDbService.patch(thing, patchDto);
-  }
-
-  @Delete('/delete/:thing')
-  async delete(@Param('thing') thing: string) {
-    return await this.surrealDbService.delete(thing);
-  }
-
-  @Get('/version')
-  async version() {
-    return await this.surrealDbService.version();
+  // ISO GraphQL queries (SurrealDB 3.x only)
+  @Post('/gql')
+  async gql(@Body() { query, variables }: GqlDto) {
+    return await this.surrealDbService.gql(query, variables);
   }
 
   @Post('/run/:name')
@@ -188,73 +250,112 @@ export class SurrealDbController {
     return await this.surrealDbService.run(name, runDto);
   }
 
-  // TODO: relate: this method is WIP, until it works in surreal javascript sdk
-  @Post('/relate/:thing')
-async relate(@Param('thing') thing: string, @Body() relateDto: RelateDto) {
-    // BOF: future implementation
-    // // Logger.log(`Raw Payload: ${JSON.stringify(rawPayload)}`, SurrealDbController.name);
-    // // normalize payload to always be an array, this wai it works with arrays and plain objects
-    // const payloadArray = Array.isArray(rawPayload) ? rawPayload : [rawPayload];
-    // const transformedData = payloadArray.map(item =>
-    //   plainToInstance(Relate, item, {
-    //     enableImplicitConversion: true,
-    //     excludeExtraneousValues: false,
-    //   })
-    // );
-    // // used RelateDto here, not in controller
-    // const relationDto = new RelateDto();
-    // relationDto.data = transformedData;
-    // Logger.log(`Transformed DTO: ${JSON.stringify(relationDto)}`, SurrealDbController.name);
-    // // TRY #1: string
-    // // const from = 'person:mario';
-    // // const to = 'post:3jzehgkqyqvip86ryy5f';
-    // // 
-    // // TRY #2: StringRecordId
-    // // const from = new StringRecordId('person:mario');
-    // // const to = new StringRecordId('post:3jzehgkqyqvip86ryy5f');
-    // //
-    // // TRY #3
-    // const from = [
-    //   new StringRecordId('person:mario'),
-    //   new StringRecordId('person:alex'),
-    // ];
-    // const to = [
-    //   new StringRecordId('post:3jzehgkqyqvip86ryy5f'),
-    //   new StringRecordId('post:wu4o9efvd25nz9rpp5v3'),
-    // ];
+  // surrealdb 3 user defined APIs, proxies GET/POST/PUT/PATCH/DELETE to `db.api()`
 
-    // const data = {
-    //   newProp: 'fooBar',
-    //   temp: {
-    //     prop1: 'value1',
-    //     prop2: 'value2',
-    //     prop3: 'value3'
-    //   },
-    //   tags: ['rust', 'ts']
-    // };
-    // return await this.surrealDbService.relate(from, new StringRecordId(thing), to, data);
-    // EOF: future implementation
+  @All('/api/*')
+  async api(@Req() req: Request) {
+    const prefix = '/surrealdb/api';
+    const path = req.path.slice(req.path.indexOf(prefix) + prefix.length) || '/';
+    const api = (this.surrealDbService as any).db.api();
+    switch (req.method) {
+      case 'POST':
+        return await api.post(path, req.body);
+      case 'PUT':
+        return await api.put(path, req.body);
+      case 'PATCH':
+        return await api.patch(path, req.body);
+      case 'DELETE':
+        return await api.delete(path);
+      default:
+        return await api.get(path);
+    }
+  }
 
-    // https://discord.com/channels/902568124350599239/1013527402674139268/1313934957776736277
-    // await this.surrealDbService.query(`RELATE $from->${thing}->$to`, {
-    //   from: new StringRecordId(from),
-    //   to: new StringRecordId(to)
-    // });
-    return await this.surrealDbService.query(`RELATE $from->${thing}->$to CONTENT $data`, {
-      from: new StringRecordId(relateDto.from),
-      to: new StringRecordId(relateDto.to),
-      data: relateDto.data,
+  // live queries
+
+  @Post('/live/:thing')
+  async live(@Param('thing') thing: string) {
+    const subscription = await this.surrealDbService.live(thing);
+    subscription.subscribe?.(liveCallback);
+    const id = subscription.id?.toString();
+    if (id) {
+      this.liveSubscriptions.set(id, subscription);
+    }
+    return { id };
+  }
+
+  // v2 replacement for v1 `subscribe-live`
+  @Post('/live-of/:id')
+  async liveOf(@Param('id') id: string) {
+    const subscription = await this.surrealDbService.liveOf(id);
+    subscription.subscribe?.(liveCallback);
+    const key = subscription.id?.toString() ?? id;
+    this.liveSubscriptions.set(key, subscription);
+    return { id: key };
+  }
+
+  // v2 replacement for v1 `kill`
+  @Delete('/live/:id')
+  async kill(@Param('id') id: string) {
+    const subscription = this.liveSubscriptions.get(id);
+    if (subscription) {
+      this.liveSubscriptions.delete(id);
+      return await subscription.kill();
+    }
+    // not started here, attach to it just to kill it
+    const unmanaged = await this.surrealDbService.liveOf(id);
+    return await unmanaged.kill();
+  }
+
+  // data methods
+
+  @Get('/select/:thing')
+  async select(
+    @Param('thing') thing: string,
+    @Query('where') where?: string,
+    @Query('limit') limit?: string,
+    @Query('start') start?: string,
+    @Query('fields') fields?: string,
+    @Query('fetch') fetch?: string,
+  ) {
+    return await this.surrealDbService.select(thing, {
+      where,
+      limit: limit !== undefined ? Number(limit) : undefined,
+      start: start !== undefined ? Number(start) : undefined,
+      fields: fields?.split(','),
+      fetch: fetch?.split(','),
     });
   }
 
-  @Post('/rpc/:method')
-  async rpc(@Param('method') method: string, @Body() rpcDto: unknown[]) {
-    return await this.surrealDbService.rpc(method, rpcDto);
+  @Post('/create/:thing')
+  async create(@Param('thing') thing: string, @Body() createDto: DataDto) {
+    return await this.surrealDbService.create(thing, createDto.data);
   }
 
-  // TODO: export
-  @Post('/export')
-  async export(@Body() optionsDto?: Partial<ExportOptions>) {
-    return await this.surrealDbService.export(optionsDto);
+  @Post('/insert/:thing')
+  async insert(@Param('thing') thing: string, @Body() insertDto: DataDto) {
+    return await this.surrealDbService.insert(thing, insertDto.data);
+  }
+
+  @Put('/update/:thing')
+  async update(@Param('thing') thing: string, @Body() updateDto: UpdateDto) {
+    return await this.surrealDbService.update(thing, updateDto.data, updateDto.mode);
+  }
+
+  @Patch('/upsert/:thing')
+  async upsert(@Param('thing') thing: string, @Body() upsertDto: UpdateDto) {
+    return await this.surrealDbService.upsert(thing, upsertDto.data, upsertDto.mode);
+  }
+
+  @Delete('/delete/:thing')
+  async delete(@Param('thing') thing: string) {
+    return await this.surrealDbService.delete(thing);
+  }
+
+  @Post('/relate/:thing')
+  async relate(@Param('thing') thing: string, @Body() relateDto: RelateDto) {
+    const from = relateDto.fromMany ?? relateDto.from;
+    const to = relateDto.toMany ?? relateDto.to;
+    return await this.surrealDbService.relate(from, thing, to, relateDto.data);
   }
 }

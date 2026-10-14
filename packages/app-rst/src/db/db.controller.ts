@@ -8,7 +8,7 @@ export class DbController {
   ) { }
 
   // use app-lib > calling userService
-  @Get('userservice')
+  @Get('user-service')
   async getUserFindOneByField(): Promise<User> {
     return this.surrealDbService.getUserFindOneByField();
   }

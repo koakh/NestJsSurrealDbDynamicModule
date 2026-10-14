@@ -14,7 +14,7 @@ services:
     ports:
       - 3030:3030
     environment:
-      SURREALDB_URL: "ws://127.0.0.1:8000/rpc"
+      SURREALDB_URL: "ws://127.0.0.1:8001/rpc"
     #   SURREALDB_NAMESPACE: "test"
     #   SURREALDB_DATABASE: "test"
     #   SURREALDB_USERNAME: "root"
@@ -31,4 +31,4 @@ services:
     command: "start --user root --pass root"
     # uncomment to expose surrealdb port
     ports:
-      - 8001:8000
+      - 8001:8001

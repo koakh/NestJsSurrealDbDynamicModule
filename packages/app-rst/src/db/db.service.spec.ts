@@ -1,3 +1,4 @@
+import { SurrealDbService } from '@koakh/nestjs-surrealdb';
 import { Test, TestingModule } from '@nestjs/testing';
 import { DbService } from './db.service';
 
@@ -6,7 +7,10 @@ describe('DbService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [DbService],
+      providers: [
+        DbService,
+        { provide: SurrealDbService, useValue: {} },
+      ],
     }).compile();
 
     service = module.get<DbService>(DbService);
