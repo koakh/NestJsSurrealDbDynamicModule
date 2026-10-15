@@ -20,7 +20,7 @@ Requires Node **>= 22** (SDK v2 uses the global `WebSocket` for `ws://`) and Sur
 
 ```shell
 yarn surreal:docker     # or: yarn surreal (local binary, rocksdb://database)
-yarn surreal:initdb     # imports initdb.sql; required for signup/signin endpoints
+yarn surreal:initdb     # imports initdb.surql; required for signup/signin endpoints
 yarn app-lib:dev        # terminal 1: tsc watch for the lib
 yarn start:app-rst      # terminal 2: nodemon debug on port 3030
 ```
@@ -30,7 +30,7 @@ yarn start:app-rst      # terminal 2: nodemon debug on port 3030
 - If workspace links go missing: `rm -f .yarn/install-state.gz && rm -rf node_modules packages/*/node_modules && yarn install --mode=skip-build` — yarn will NOT relink from a cached install state.
 - `start:app-rst` first runs `kill-port` (`sudo fuser -k 3030/tcp` — needs sudo) and exposes `node --inspect` on 127.0.0.1:9232. VS Code: use the "Launch via Yarn" config.
 - app-rst env defaults are built into `src/config/configuration.ts` (defaults to `ws://127.0.0.1:8001/rpc`) — no `.env` needed for the default local stack (`.env.sample` points at an unrelated external stack). Override via `SURREALDB_URL/NAMESPACE/DATABASE/USERNAME/PASSWORD`, `HTTP_SERVER_PORT`.
-- SurrealDB v3 requires `OPTION IMPORT;` as the first statement of any import — `initdb.sql` has it, and the REST `POST /surrealdb/import` auto-prepends it. v3 CLI renamed `--conn` to `--endpoint`.
+- SurrealDB v3 requires `OPTION IMPORT;` as the first statement of any import — `initdb.surql` has it, and the REST `POST /surrealdb/import` auto-prepends it. v3 CLI renamed `--conn` to `--endpoint`.
 
 ## Tests
 

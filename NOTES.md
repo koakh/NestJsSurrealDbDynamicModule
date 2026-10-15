@@ -32,6 +32,8 @@ AFTER SO MANY HOURS the start solving is using `@Global` on `SurrealDbModule`
 
 ## Problems
 
+> NOTE: the GraphQL notes in this section (error handling, generic `@InputType()` resolvers, N+1/DataLoader) refer to the **legacy v1-era packages**, now frozen in `packages-wip/` (pending surrealdb.js v2 upgrade). kept for reference — see the "SDK v2 migration lessons" section at the bottom for the current state.
+
 ### Graphql Error Handling
 
 - [GraphQL doesn&#39;t work well with `BaseExceptionFilter` · Issue #5958 · nestjs/nest](https://github.com/nestjs/nest/issues/5958)

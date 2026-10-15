@@ -34,6 +34,6 @@ BREAKING release: surrealdb.js `1.1.0` -> `2.1.1` (SurrealDB server `v2.0.0+`, v
 - peer dependencies declared: `@nestjs/common ^11`, `reflect-metadata ^0.2`
 - consumer demo app (app-rst) upgraded to NestJS 11, jest 30, TypeScript 6
 
-## 1.0.0
+## 0.1.x
 
-initial legacy release line (surrealdb.js 1.x)
+initial legacy release line (surrealdb.js 1.x), published up to `0.1.5`
