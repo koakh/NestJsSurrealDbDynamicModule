@@ -140,7 +140,7 @@ Y88b  d88P Y88b 888 888     888     Y8b.     888  888 888 888  .d88P 888   d88P
 
 ## Init surrealDb Database
 
-import the `initdb.sql`
+import the `initdb.surql`
 
 ```shell
 # import schemafull

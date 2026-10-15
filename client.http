@@ -242,7 +242,7 @@ Content-Type: application/json
 
 ### postSignUp
 // @name postSignUp
-// SurrealDB 2.x+ record access, `initdb.sql` defines access `account`
+// SurrealDB 2.x+ record access, `initdb.surql` defines access `account`
 
 POST {{uriSurrealDb}}/signup
 Content-Type: application/json
@@ -389,7 +389,7 @@ Content-Type: application/json
 
 ### postRun
 // @name postRun
-// Run a SurrealQL function, ex `fn::greet` from `initdb.sql`
+// Run a SurrealQL function, ex `fn::greet` from `initdb.surql`
 
 POST {{uriSurrealDb}}/run/fn::greet
 Content-Type: application/json

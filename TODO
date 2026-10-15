@@ -1,6 +1,6 @@
 Global:
   ☐ @critical cleanup main project README with scripts from package.json, links to project README's, how to run all projects, init db to test signup signin etc
-  ☐ add initdb with sample data and maybe a schema `initdb.sql` (from old project)
+  ☐ add initdb with sample data and maybe a schema `initdb.surql` (from old project)
   ☐ @critical rest with current package without graphql deps
   ✔ test all client.http requests, do some cleanup @done(22-10-11 22:35)
   ✔ use latest surrealdb.js package @done(22-10-03 22:59)

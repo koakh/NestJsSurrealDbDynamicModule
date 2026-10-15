@@ -319,7 +319,7 @@ after this both commands works flawless `version:patch` and `version:publish`
 - yarn 4 will NOT relink `node_modules` from a cached install state: after deleting links, run `rm -f .yarn/install-state.gz && rm -rf node_modules packages/*/node_modules && yarn install --mode=skip-build`.
 - duplicate lib copies (per-package vs hoisted `node_modules/@koakh`) produce misleading Nest DI errors (`can't resolve SURREALDB_MODULE_OPTIONS`) even when `dist` and the token are correct — clean reinstall fixes it.
 - `ConfigurableModuleBuilder` auto-token from `moduleName: 'SurrealDb'` generates `SURREAL_DB_MODULE_OPTIONS` (camel split), not `SURREALDB_MODULE_OPTIONS` — pin it with `optionsInjectionToken`.
-- SurrealDB v3 requires `OPTION IMPORT;` as the first statement of any import (SDK auto-prepended in our service; `initdb.sql` includes it).
+- SurrealDB v3 requires `OPTION IMPORT;` as the first statement of any import (SDK auto-prepended in our service; `initdb.surql` includes it).
 - v3 CLI renamed `--conn` to `--endpoint`; a v1 CLI refuses v3 servers outright (version range check). The official installer script builds a stale v1-era CDN URL (403) — download directly from `https://download.surrealdb.com/vX.Y.Z/surreal-vX.Y.Z.linux-amd64.tgz` (note the double `v`).
 - SDK v2 quirks: `upsert` must not pre-check existence; `run(name, args)` must never pass an explicit `undefined` version (breaks overload dispatch); `health()` rpc is not available over WS on v3.1.6 (fallback to connection status).
 - `closeSession()` on the primary session is equivalent to `close()` — kills the shared connection, auto-reconnect does not apply to deliberate closes.
