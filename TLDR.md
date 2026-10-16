@@ -1,5 +1,5 @@
 # TLDR
-## 
+
 ```shell
 $ git clone https://github.com/koakh/NestJsSurrealDbDynamicModule.git
 # node >= 22 required (SDK v2 uses the global WebSocket)
