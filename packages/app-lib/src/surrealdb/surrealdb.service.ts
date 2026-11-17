@@ -20,7 +20,7 @@ import {
 import { UserServiceAbstract } from './surrealdb.abstracts';
 import { SURREALDB_MODULE_OPTIONS, SURREALDB_MODULE_USER_SERVICE, adminCurrentUser } from './surrealdb.constants';
 import { SurrealDbModuleOptions } from './surrealdb.interfaces';
-import { RecordId$1, SurrealDbUser as User } from './types';
+import { SurrealDbUser as User } from './types';
 
 /**
  * how to return `query()` results
@@ -621,7 +621,7 @@ export class SurrealDbService implements OnApplicationShutdown {
    * (v2 replacement for v1 `subscribeLive`)
    * @param id - The unique ID of an existing live query
    */
-  async liveOf<T = Record<string, unknown>>(id: Uuid | string): Promise<any> {
+  async liveOf(id: Uuid | string): Promise<any> {
     const uuid = typeof id === 'string' ? new Uuid(id) : id;
     return await this.db.liveOf(uuid) as any;
   }

@@ -255,7 +255,7 @@ describe('AppController (e2e)', () => {
 
 ## SurrealDB Specific Patterns
 
-> v4 baseline (verified `4.0.0`): ISO GraphQL `gql()` is removed (server dropped it), `health()` probes via `version()` (server rpc removed), `relate()` runs SurrealQL `RELATE` with bindings (server rpc marshalling broken). the full surface is verified by `yarn app-lib:surface`.
+> v4 baseline (verified `4.0.0`): ISO GraphQL `gql()` is removed (server dropped it), `health()` probes via `version()` (server rpc removed), `relate()` runs SurrealQL `RELATE` with bindings (server rpc marshalling broken), `exportModel()`/SurrealML removed (feature capped `< 4.0.0`). session variables have a full set/get/unset trio (`get(variable)` runs `RETURN $<variable>`). the full surface is verified by `yarn app-lib:surface`.
 
 ### Connection Management
 - **Health Checks**: Use `health()` (v2 replacement for v1 `ping`), plus `getStatus()` / `getIsConnected()`
@@ -366,6 +366,9 @@ await subscription.kill();
 - `GET /config` in app-rst redacts the password before returning the module config
 - `ConnectDto.url` scheme allowlist blocks `file://` and arbitrary schemes
 - unexpected errors return a generic 500 message (details stay in logs)
+- expected `HttpException`s log as compact one-liners (stacks only for unexpected errors)
+- process guard (app-rst main.ts): `unhandledRejection`/`uncaughtException` are logged and the app keeps running (default ON, `PROCESS_GUARD=false` restores crash-fast)
+- HTTP status mappings on the proxy: missing record -> 404, duplicate record id -> 409, bad credentials -> 401, invalid/expired token -> 401, duplicate record-access signup -> 409 with causes
 
 ### Publishing Library
 ```bash

@@ -1,5 +1,6 @@
+import { DbService } from './db.service';
 import { SurrealDbService, SurrealDbUser as User } from '@koakh/nestjs-surrealdb';
-import { Body, ConflictException, Controller, Get, Logger, Param, Post, Query, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Body, ConflictException, Controller, Get, Logger, Param, Post, Query, UnauthorizedException } from '@nestjs/common';
 import { CreatePersonDto, DbSigninDto, DbSignupDto } from '../dto';
 
 /**
@@ -10,13 +11,16 @@ import { CreatePersonDto, DbSigninDto, DbSignupDto } from '../dto';
 @Controller('db')
 export class DbController {
   constructor(
+    // feature-module pattern: consume the lib through a feature service
+    private readonly dbService: DbService,
+    // direct pattern: the @Global() SurrealDbService is injectable anywhere
     private readonly surrealDbService: SurrealDbService,
   ) { }
 
   // use app-lib > calling userService
   @Get('user-service')
   async getUserFindOneByField(): Promise<User> {
-    return this.surrealDbService.getUserFindOneByField();
+    return this.dbService.getUserFindOneByField();
   }
 
   @Get('select/:thing')
@@ -141,8 +145,12 @@ export class DbController {
    */
   @Post('live-demo/:thing')
   async liveDemo(@Param('thing') thing: string) {
-    // v4 requires the table to exist before a live query can listen on it
+    // v4 requires the table to exist before a live query can listen on it.
+    // validate the identifier before interpolating it into SurrealQL (injection guard)
     if (!thing.includes(':')) {
+      if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(thing)) {
+        throw new BadRequestException(`invalid table name: ${thing}`);
+      }
       await this.surrealDbService.query(`DEFINE TABLE IF NOT EXISTS ${thing} SCHEMALESS`);
     }
     const events: Array<Record<string, unknown>> = [];

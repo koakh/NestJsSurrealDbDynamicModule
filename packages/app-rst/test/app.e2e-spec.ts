@@ -183,6 +183,24 @@ describe('App (e2e, needs a running SurrealDB)', () => {
     if (!actions.includes('CREATE')) throw new Error(`no CREATE event captured: ${JSON.stringify(res.body).slice(0, 150)}`);
   });
 
+  it('HTTP status mappings: 404 / 409 / 401', async () => {
+    if (!reachable) return;
+    // missing record -> 404
+    await request(app.getHttpServer()).get('/surrealdb/select/person:definitely_missing_audit').expect(404);
+    // duplicate record id -> 409 (create fresh first, then duplicate)
+    await request(app.getHttpServer()).post('/surrealdb/create/person:audit409').send({ data: { title: 'audit' } }).expect(201);
+    await request(app.getHttpServer()).post('/surrealdb/create/person:audit409').send({ data: { title: 'audit' } }).expect(409)
+      .expect((res) => {
+        if (!String(res.body?.message ?? '').includes('already exists')) throw new Error(`unexpected: ${JSON.stringify(res.body)}`);
+      });
+    // bad credentials -> 401
+    await request(app.getHttpServer()).post('/db/signin').send({ username: 'ghost', password: 'nope' }).expect(401);
+    // invalid/expired token -> 401
+    await request(app.getHttpServer()).post('/surrealdb/authenticate').send({ token: 'garbage.token.here' }).expect(401);
+    // cleanup
+    await request(app.getHttpServer()).delete('/surrealdb/delete/person:audit409').expect(200);
+  });
+
   it('record access auth flow: signup -> signin -> auth, then restore root', async () => {
     if (!reachable) return;
     const username = `e2e_auth_${Date.now()}`;
