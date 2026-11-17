@@ -339,6 +339,7 @@ Content-Type: application/json
 ### postSignUp
 // @name postSignUp
 // SurrealDB 2.x+ record access, `initdb.surql` defines access `account`
+// NOTE: `username` is UNIQUE, a duplicate returns 409 (re-run initdb to wipe, or change it)
 
 POST {{uriSurrealDb}}/signup
 Content-Type: application/json
