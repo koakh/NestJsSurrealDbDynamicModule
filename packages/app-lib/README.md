@@ -306,9 +306,6 @@ await surrealDb.import('DEFINE TABLE person SCHEMALESS;');
 
 // export the whole database as SurrealQL
 const surql = await surrealDb.export();
-
-// export a SurrealML model
-await surrealDb.exportModel('my-model', '1.0.0');
 ```
 
 ### Sessions and Connection
@@ -366,7 +363,7 @@ export class AppModule {}
 | --- | --- |
 | connection | `POST /surrealdb/connect` `{url}`, `POST /surrealdb/close`, `GET /surrealdb/health`, `GET /surrealdb/status`, `GET /surrealdb/is-connected`, `GET /surrealdb/is-feature-supported/:feature`, `GET /surrealdb/version`, `POST /surrealdb/subscribe/:event` |
 | sessions | `GET /surrealdb/sessions`, `POST /surrealdb/session`, `POST /surrealdb/session/fork`, `DELETE /surrealdb/session`, `POST /surrealdb/reset`, `POST /surrealdb/use` `{namespace, database}` |
-| import/export | `POST /surrealdb/import` `{data}`, `POST /surrealdb/export`, `GET /surrealdb/export-model/:name/:version` |
+| import/export | `POST /surrealdb/import` `{data}`, `POST /surrealdb/export` |
 | transactions | `POST /surrealdb/transaction` -> `{id}`, `POST /surrealdb/transaction/:id/query` `{query, bindings}`, `POST /surrealdb/transaction/:id/commit`, `POST /surrealdb/transaction/:id/cancel` |
 | auth | `POST /surrealdb/signup`, `POST /surrealdb/signin`, `POST /surrealdb/authenticate` `{token, refresh?}`, `POST /surrealdb/invalidate`, `GET /surrealdb/auth` |
 | query | `POST /surrealdb/query` `{query, bindings, mode}`, `POST /surrealdb/run/:name` `[args]` |

@@ -7,6 +7,7 @@ SurrealDB server migration release: verified against **`v4.0.0`** (docker `surre
 ### Breaking
 
 - `gql()` and REST `POST /surrealdb/gql` removed: SurrealDB 4 dropped ISO GraphQL (server-side parse error) — use `query()` with SurrealQL instead
+- `exportModel()` and REST `GET /surrealdb/export-model/:name/:version` removed: SurrealDB 4 dropped SurrealML (the SDK feature table caps it at `< 4.0.0`, calls fail with `UnavailableFeatureError` before reaching the server)
 - SurrealQL `version()` function no longer exists on the server: use the service `version()` (rpc, returns `{ version: "surrealdb-4.0.0" }`)
 
 ### Changed
