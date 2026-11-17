@@ -1,4 +1,4 @@
-import { All, Body, ConflictException, Controller, Delete, Get, Logger, Param, Patch, Post, Put, Query, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
+import { All, Body, ConflictException, Controller, Delete, Get, Logger, NotFoundException, Param, Patch, Post, Put, Query, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import {
   SurrealTransaction,
@@ -199,6 +199,19 @@ export class SurrealDbController {
     return transaction;
   }
 
+  /**
+   * map the service "Record not found" error (thrown by the thingExists
+   * pre-check on record id operations) to a proper 404 at the HTTP layer
+   */
+  private notFoundAs404<T>(promise: Promise<T>): Promise<T> {
+    return promise.catch((error) => {
+      if (error instanceof Error && /^Record not found:/i.test(error.message)) {
+        throw new NotFoundException(error.message);
+      }
+      throw error;
+    });
+  }
+
   // authentication
 
   // https://surrealdb.com/docs/reference/javascript/api/core/surreal-session#signup
@@ -357,13 +370,13 @@ export class SurrealDbController {
     @Query('fields') fields?: string,
     @Query('fetch') fetch?: string,
   ) {
-    return await this.surrealDbService.select(thing, {
+    return this.notFoundAs404(this.surrealDbService.select(thing, {
       where,
       limit: limit !== undefined ? Number(limit) : undefined,
       start: start !== undefined ? Number(start) : undefined,
       fields: fields?.split(','),
       fetch: fetch?.split(','),
-    });
+    }));
   }
 
   @Post('/create/:thing')
@@ -378,7 +391,7 @@ export class SurrealDbController {
 
   @Put('/update/:thing')
   async update(@Param('thing') thing: string, @Body() updateDto: UpdateDto) {
-    return await this.surrealDbService.update(thing, updateDto.data, updateDto.mode);
+    return this.notFoundAs404(this.surrealDbService.update(thing, updateDto.data, updateDto.mode));
   }
 
   @Patch('/upsert/:thing')
@@ -388,7 +401,7 @@ export class SurrealDbController {
 
   @Delete('/delete/:thing')
   async delete(@Param('thing') thing: string) {
-    return await this.surrealDbService.delete(thing);
+    return this.notFoundAs404(this.surrealDbService.delete(thing));
   }
 
   @Post('/relate/:thing')
