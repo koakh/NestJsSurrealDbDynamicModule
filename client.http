@@ -117,7 +117,7 @@ Content-Type: {{contentType}}
 // @name getDbPerson
 // select person by id (from postDbCreatePerson response)
 
-GET {{uriDb}}/person/{{postDbCreatePerson.response.body.[0].id}} HTTP/1.1
+GET {{uriDb}}/person/{{postDbCreatePerson.response.body.id}} HTTP/1.1
 Content-Type: {{contentType}}
 
 // transactions
