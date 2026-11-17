@@ -8,9 +8,9 @@ import { DbModule } from './db/db.module';
 import { UserModule } from './user/user.module';
 import { UserService } from './user/user.service';
 
-// TODO: implement on shutdown close connection to surrealdb
-// this will enable @Inject(APP_SERVICE) on DbService
-// @Global()
+// graceful shutdown is implemented in the lib (SurrealDbService implements
+// OnApplicationShutdown and closes the connection), enabled here by
+// app.enableShutdownHooks() in main.ts
 @Module({
   imports: [
     ConfigModule.forRoot({

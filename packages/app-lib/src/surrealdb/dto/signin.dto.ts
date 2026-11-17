@@ -1,4 +1,4 @@
-import { IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { IsObject, IsOptional, IsString } from 'class-validator';
 
 export class SigninDto {
   // system user credentials (root, namespace or database user)

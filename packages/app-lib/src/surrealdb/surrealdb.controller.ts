@@ -1,4 +1,4 @@
-import { All, Body, ConflictException, Controller, Delete, Get, Logger, NotFoundException, Param, Patch, Post, Put, Query, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
+import { All, BadRequestException, Body, ConflictException, Controller, Delete, Get, Logger, NotFoundException, Param, Patch, Post, Put, Query, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import {
   SurrealTransaction,
@@ -112,7 +112,7 @@ export class SurrealDbController {
 
   @Post('/subscribe/:event')
   subscribe(@Param('event') event: string) {
-    const unsubscribe = this.surrealDbService.subscribe(event, (...args) => {
+    this.surrealDbService.subscribe(event, (...args) => {
       Logger.log(`event '${event}': ${JSON.stringify(args, undefined, 2)}`, SurrealDbController.name);
     });
     return { subscribed: true, event };
@@ -413,6 +413,11 @@ export class SurrealDbController {
   async relate(@Param('thing') thing: string, @Body() relateDto: RelateDto) {
     const from = relateDto.fromMany ?? relateDto.from;
     const to = relateDto.toMany ?? relateDto.to;
-    return await this.surrealDbService.relate(from, thing, to, relateDto.data);
+    // at least one source and one target are required, else the StringRecordId
+    // construction would fail with an opaque 500
+    if (!from || !to) {
+      throw new BadRequestException('provide `from` or `fromMany`, and `to` or `toMany`');
+    }
+    return this.mapHttpErrors(this.surrealDbService.relate(from, thing, to, relateDto.data));
   }
 }

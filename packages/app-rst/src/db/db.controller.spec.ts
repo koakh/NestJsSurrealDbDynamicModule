@@ -1,6 +1,7 @@
 import { SurrealDbService } from '@koakh/nestjs-surrealdb';
 import { Test, TestingModule } from '@nestjs/testing';
 import { DbController } from './db.controller';
+import { DbService } from './db.service';
 
 describe('DbController', () => {
   let controller: DbController;
@@ -10,6 +11,7 @@ describe('DbController', () => {
       controllers: [DbController],
       providers: [
         { provide: SurrealDbService, useValue: {} },
+        { provide: DbService, useValue: { getUserFindOneByField: () => Promise.resolve({}) } },
       ],
     }).compile();
 
