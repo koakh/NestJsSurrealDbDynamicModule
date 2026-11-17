@@ -4,6 +4,18 @@ import { HttpAdapterHost, NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './filters';
 
+// process guard: log unexpected errors and keep the app alive instead of
+// crashing (default ON). crash-fast is the node default and the right posture
+// under a supervisor (docker restart / pm2 / k8s) — this protects the bare dev app
+if (process.env.PROCESS_GUARD !== 'false') {
+  process.on('unhandledRejection', (reason) => {
+    Logger.error(`unhandledRejection: ${reason instanceof Error ? reason.stack ?? reason.message : String(reason)}`, 'ProcessGuard');
+  });
+  process.on('uncaughtException', (error) => {
+    Logger.error(`uncaughtException: ${error.stack ?? error.message}`, 'ProcessGuard');
+  });
+}
+
 async function bootstrap() {
   const context = 'NestApplication';
   const app = await NestFactory.create(AppModule);
