@@ -104,12 +104,16 @@ export class DbController {
 
   @Post('person')
   async createPerson(@Body() createPersonDto: CreatePersonDto) {
-    return await this.surrealDbService.create('person', createPersonDto);
+    const created = await this.surrealDbService.create('person', createPersonDto);
+    // return the created record directly (not the array), friendlier for clients
+    return Array.isArray(created) ? created[0] : created;
   }
 
   @Get('person/:id')
   async getPerson(@Param('id') id: string) {
-    return await this.surrealDbService.select(`person:${id}`);
+    // accept both the raw id and the full record id (`person:xyz`)
+    const thing = this.surrealDbService.isRecordId(id) ? id : `person:${id}`;
+    return await this.surrealDbService.select(thing);
   }
 
   // transactions: one endpoint doing begin -> query -> commit
