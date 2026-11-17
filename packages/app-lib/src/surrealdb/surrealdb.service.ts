@@ -413,6 +413,20 @@ export class SurrealDbService implements OnApplicationShutdown {
   }
 
   /**
+   * Read a session variable back (the SDK has `set`/`unset` but no getter,
+   * this runs `RETURN $<variable>` under the hood)
+   * @param variable - Specifies the name of the variable (without the `$`)
+   */
+  async get<T = unknown>(variable: string): Promise<T | null> {
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(variable)) {
+      throw new Error(`invalid variable name: ${variable}`);
+    }
+    const res = await this.query<T[]>(`RETURN $${variable}`);
+    // collect mode wraps the single statement result, RETURN of NONE gives null
+    return (Array.isArray(res) ? res[0] : res) ?? null;
+  }
+
+  /**
    * Remove a variable from the current session
    * @param variable - Specifies the name of the variable
    */

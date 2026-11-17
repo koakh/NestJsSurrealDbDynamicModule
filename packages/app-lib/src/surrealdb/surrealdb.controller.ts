@@ -266,6 +266,12 @@ export class SurrealDbController {
     return await this.surrealDbService.set(setDto.variable, setDto.value);
   }
 
+  // read a session variable back (the SDK has set/unset but no getter)
+  @Get('/get/:variable')
+  async get(@Param('variable') variable: string) {
+    return await this.surrealDbService.get(variable);
+  }
+
   @Post('/unset')
   async unset(@Body() unsetDto: UnsetDto) {
     return await this.surrealDbService.unset(unsetDto.variable);

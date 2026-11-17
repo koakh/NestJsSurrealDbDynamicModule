@@ -26,6 +26,7 @@ SurrealDB server migration release: verified against **`v4.0.0`** (docker `surre
 
 - `yarn app-lib:surface` (repo root): boots the real `SurrealDbModule` and drives the full `SurrealDbService` public API against a live server with a PASS/FAIL matrix — the server-migration acceptance gate (env-configurable via `SURREALDB_URL` etc.)
 - opt-in `controllerGuard` module option + `SurrealDbControllerGuard`: a request guard applied to every `SurrealDbController` endpoint (default absent = open, back-compatible; `false` -> 403, throw any `HttpException` for custom responses)
+- `get(variable)` / `GET /surrealdb/get/:variable`: read a session variable back (the SDK has `set`/`unset` but no getter; runs `RETURN $<variable>`, null when unset)
 - graceful shutdown: `SurrealDbService` implements `OnApplicationShutdown` and closes the connection (requires `app.enableShutdownHooks()` in the consumer bootstrap)
 
 ### Security / audit hardening
