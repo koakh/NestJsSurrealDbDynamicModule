@@ -329,15 +329,6 @@ export class SurrealDbService implements OnApplicationShutdown {
     return await this.db.export(options);
   }
 
-  /**
-   * Export a SurrealML model
-   * @param name - The name of the model
-   * @param version - The version of the model
-   */
-  async exportModel(name: string, version: string): Promise<unknown> {
-    return await this.db.exportModel(name, version);
-  }
-
   // transactions
 
   /**

@@ -293,13 +293,6 @@ Content-Type: application/json
   "records": true
 }
 
-### getExportModel
-// @name getExportModel
-// SurrealML model export
-
-GET {{uriSurrealDb}}/export-model/my_model/1.0.0 HTTP/1.1
-Content-Type: {{contentType}}
-
 // transactions
 // begin returns an id, run queries with /transaction/:id/query, then commit or cancel
 

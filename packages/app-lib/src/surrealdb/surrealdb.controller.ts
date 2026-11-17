@@ -160,11 +160,6 @@ export class SurrealDbController {
     return await this.surrealDbService.export(optionsDto);
   }
 
-  @Get('/export-model/:name/:version')
-  async exportModel(@Param('name') name: string, @Param('version') version: string) {
-    return await this.surrealDbService.exportModel(name, version);
-  }
-
   // transactions
   // begin returns an id, run queries with `/transaction/:id/query`, then commit or cancel
 
