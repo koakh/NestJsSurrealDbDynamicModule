@@ -2,6 +2,8 @@
 
 [NestJs](https://nestjs.com/) `@Global()` dynamic module wrapper on top of [surrealdb.js](https://surrealdb.com/docs/integration/libraries/nodejs) **v2** ([github](https://github.com/surrealdb/surrealdb.js)), with a `SurrealDbService` that proxies the **full SDK v2 surface** and an **opt-in REST controller** exposing it over HTTP.
 
+> `@koakh/nestjs-surrealdb` **v0.3.0** · surrealdb.js **^2.2.2** · SurrealDB server **v4** (verified `4.0.0`/`4.0.1`) · NestJS **^11** · Node **>= 22** — migrated from server v3 in v0.3.0, see the [root README version matrix](https://github.com/koakh/NestJsSurrealDbDynamicModule#version-matrix-and-roadmap)
+
 > this is **just a simple wrapper on top** of the official driver, check the [github repo](https://github.com/surrealdb/surrealdb.js), and don't forget to give a **star** to the project and integrations, this "surreal dream team" deserve it
 
 ## Table of Contents
@@ -16,15 +18,17 @@
 - [The `userService` / `APP_SERVICE` wiring](#the-userservice--app_service-wiring)
 - [Using `SurrealDbService`](#using-surrealdbservice)
   - [CRUD (data methods)](#crud-data-methods)
-  - [Query, GQL and `run`](#query-gql-and-run)
+  - [Query and `run`](#query-and-run)
   - [Transactions](#transactions)
   - [Live Queries](#live-queries)
   - [Authentication](#authentication)
   - [Import / Export](#import--export)
   - [Sessions and Connection](#sessions-and-connection)
 - [Opt-in REST Controller](#opt-in-rest-controller)
+- [Securing the REST Controller](#securing-the-rest-controller)
 - [Exported Types and Helpers](#exported-types-and-helpers)
 - [Migration v0.1.x -> v0.2.0](#migration-v01x---v020)
+- [Migration v0.2.x -> v0.3.0](#migration-v02x---v030)
 - [Demo Application](#demo-application)
 - [Development](#development)
 - [License](#license)
@@ -32,12 +36,14 @@
 ## Features
 
 - `SurrealDbModule.forRoot()` / `SurrealDbModule.forRootAsync()` built with `ConfigurableModuleBuilder` (`@nestjs/common`)
-- `SurrealDbService` proxying the full surrealdb.js v2 API: connection, sessions, transactions, import/export, auth, live queries, SurrealDB 3 ISO GraphQL, user-defined APIs
+- `SurrealDbService` proxying the full surrealdb.js v2 API: connection, sessions, transactions, import/export, auth, live queries, user-defined APIs
 - string-friendly API: pass `"table"` or `"table:id"` strings, the service converts to SDK v2 `Table` / `StringRecordId` value classes
 - `select` query-builder options (`where`, `limit`, `start`, `fields`, `fetch`)
 - `update` / `upsert` with `mode: 'content' | 'merge' | 'patch'`
 - `query` with pluggable result modes: `collect` (default), `json`, `responses` (with stats), `stream`
 - automatic reconnect (unlimited attempts, exponential backoff) and connection lifecycle events
+- graceful shutdown via `OnApplicationShutdown` (closes the connection, needs `app.enableShutdownHooks()`)
+- opt-in `controllerGuard` to protect the REST controller endpoints
 - opt-in `SurrealDbController`: the whole SDK surface as REST endpoints
 - re-exports the most useful SDK v2 value classes and types, so consumers don't need to depend on `surrealdb` directly
 
@@ -45,7 +51,7 @@
 
 - **Node >= 22** (SDK v2 uses the global `WebSocket`)
 - `@nestjs/common` **^11** (peer dependency) and `reflect-metadata` ^0.2
-- SurrealDB server **v2+** (verified against [v3.1.6](https://surrealdb.com/blog/surrealdb-3-0))
+- SurrealDB server — **v4 baseline**, verified against `4.0.0`/`4.0.1` (v3 servers also work, except ISO GraphQL which SurrealDB 4 removed and the lib dropped in v0.3.0)
 
 ## Installation
 
@@ -127,6 +133,7 @@ export class AppService {
 | `username` | `string` | - | system user (root/ns/db) credentials |
 | `password` | `string` | - | system user password |
 | `userService` | `UserServiceAbstract` | - | consumer app user service, see [the wiring](#the-userservice--app_service-wiring) |
+| `controllerGuard` | `(request) => boolean \| void \| Promise<boolean \| void>` | - | opt-in guard applied to every `SurrealDbController` endpoint, see [securing the controller](#securing-the-rest-controller) |
 | `initSurrealDb` | `boolean` | `true` | set `false` to skip the automatic connect on boot (ex when surrealdb is disabled in the consumer) |
 | `initSurrealDbThrowError` | `boolean` | `true` | set `false` to log-and-continue when the connection fails at boot, instead of crashing the app |
 | `reconnect` | `ConnectOptions['reconnect']` | `{ enabled: true, attempts: -1, retryDelay: 1000, retryDelayMax: 30000, retryDelayMultiplier: 2 }` | auto-reconnect configuration (unlimited attempts, exponential backoff; namespace/database/authentication are restored automatically) |
@@ -223,7 +230,7 @@ await surrealDb.relate('person:mario', 'follows', 'person:ana', { since: '2026-0
 await surrealDb.relate(['person:a', 'person:b'], 'follows', 'person:ana');
 ```
 
-### Query, GQL and `run`
+### Query and `run`
 
 ```ts
 // SurrealQL with bindings
@@ -234,11 +241,6 @@ const res = await surrealDb.query<Person[]>(
 
 // result modes: 'collect' (default) | 'json' | 'responses' (with stats) | 'stream'
 const stats = await surrealDb.query('SELECT * FROM person', undefined, 'responses');
-
-// ISO GraphQL (SurrealDB 3.x only)
-const gqlRes = await surrealDb.gql<{ person: Person[] }>(
-  'query { person { id name } }',
-);
 
 // run a SurrealQL function
 const now = await surrealDb.run<string>('time::now');
@@ -298,7 +300,7 @@ await surrealDb.invalidate();
 ### Import / Export
 
 ```ts
-// SurrealQL import, v3 requires `OPTION IMPORT;` as first statement,
+// SurrealQL import, v3+ requires `OPTION IMPORT;` as the first statement,
 // it is prepended automatically when not present
 await surrealDb.import('DEFINE TABLE person SCHEMALESS;');
 
@@ -312,10 +314,11 @@ await surrealDb.exportModel('my-model', '1.0.0');
 ### Sessions and Connection
 
 ```ts
-// v2 replacement for v1 `ping`
+// v2 replacement for v1 `ping`; SurrealDB 4 removed the health rpc,
+// so this probes the server with a `version()` round-trip (throws when unreachable)
 await surrealDb.health();
 
-// { version: "surrealdb-3.1.6" }
+// { version: "surrealdb-4.0.0" }
 const { version } = await surrealDb.version();
 
 // status: 'connecting' | 'connected' | 'reconnecting' | 'disconnected' | 'error'
@@ -366,13 +369,27 @@ export class AppModule {}
 | import/export | `POST /surrealdb/import` `{data}`, `POST /surrealdb/export`, `GET /surrealdb/export-model/:name/:version` |
 | transactions | `POST /surrealdb/transaction` -> `{id}`, `POST /surrealdb/transaction/:id/query` `{query, bindings}`, `POST /surrealdb/transaction/:id/commit`, `POST /surrealdb/transaction/:id/cancel` |
 | auth | `POST /surrealdb/signup`, `POST /surrealdb/signin`, `POST /surrealdb/authenticate` `{token, refresh?}`, `POST /surrealdb/invalidate`, `GET /surrealdb/auth` |
-| query | `POST /surrealdb/query` `{query, bindings, mode}`, `POST /surrealdb/gql` `{query, variables}` (SurrealDB 3), `POST /surrealdb/run/:name` `[args]` |
+| query | `POST /surrealdb/query` `{query, bindings, mode}`, `POST /surrealdb/run/:name` `[args]` |
 | user-defined APIs | `ANY /surrealdb/api/*` (proxied to SurrealDB 3 `db.api()`) |
 | live queries | `POST /surrealdb/live/:thing` -> `{id}`, `POST /surrealdb/live-of/:id`, `DELETE /surrealdb/live/:id` |
 | data | `GET /surrealdb/select/:thing?where=&limit=&start=&fields=&fetch=`, `POST /surrealdb/create/:thing` `{data}`, `POST /surrealdb/insert/:thing` `{data}`, `PUT /surrealdb/update/:thing` `{data, mode}`, `PATCH /surrealdb/upsert/:thing` `{data, mode}`, `DELETE /surrealdb/delete/:thing`, `POST /surrealdb/relate/:thing` `{from|fromMany, to|toMany, data}` |
 | session vars | `POST /surrealdb/set` `{variable, value}`, `POST /surrealdb/unset` `{variable}` |
 
 > the demo repo ships a ready-made [`client.http`](https://github.com/koakh/NestJsSurrealDbDynamicModule/blob/main/client.http) with requests covering the full surface
+
+## Securing the REST Controller
+
+the controller exposes the **full SDK surface over HTTP** (`query`, `import`, `export`, `run`, `connect`, ...) — never expose it to untrusted networks. when the endpoints are reachable by anyone you don't fully trust, pass the opt-in `controllerGuard` function in the module options: it runs on **every** controller endpoint, receives the raw request, and either allows (`true`/nothing), rejects with `403` (`false`), or throws any `HttpException` for a custom response
+
+```ts
+SurrealDbModule.forRoot({
+  /* ... */
+  // simple shared-secret check
+  controllerGuard: (request) => request.headers['x-api-key'] === process.env.SURREALDB_API_KEY,
+})
+```
+
+without a `controllerGuard` all endpoints stay open (back-compatible default). additional built-in hardening: `ConnectDto.url` validates the endpoint scheme against an allowlist (`ws`, `wss`, `http`, `https`, `mem`, `rocksdb`, `surrealkv`, `fdb`, `tikv`), and the service closes the connection gracefully on application shutdown (implement `OnApplicationShutdown`, requires `app.enableShutdownHooks()` in the consumer bootstrap)
 
 ## Exported Types and Helpers
 
@@ -396,7 +413,7 @@ import {
 } from '@koakh/nestjs-surrealdb';
 ```
 
-also exported: the REST DTOs (`QueryDto`, `DataDto`, `UpdateDto`, `RelateDto`, `SignupDto`, `SigninDto`, `AuthenticateDto`, `ConnectDto`, `UseDto`, `SetDto`, `GqlDto`), legacy metadata decorators (`ModelProps`, `Properties`, `Persisted`) and string helpers on the service (`isRecordId`, `parseThing`, `thingExists`, `recordIdFromStringThing`).
+also exported: the REST DTOs (`QueryDto`, `DataDto`, `UpdateDto`, `RelateDto`, `SignupDto`, `SigninDto`, `AuthenticateDto`, `ConnectDto`, `UseDto`, `SetDto`), legacy metadata decorators (`ModelProps`, `Properties`, `Persisted`) and string helpers on the service (`isRecordId`, `parseThing`, `thingExists`, `recordIdFromStringThing`).
 
 ## Migration v0.1.x -> v0.2.0
 
@@ -415,13 +432,30 @@ v0.2.0 is a **breaking release**: surrealdb.js `1.1.0` -> `2.1.1` (SurrealDB ser
 
 full changelog at [CHANGELOG.md](https://github.com/koakh/NestJsSurrealDbDynamicModule/blob/main/packages/app-lib/CHANGELOG.md)
 
+## Migration v0.2.x -> v0.3.0
+
+v0.3.0 migrates the stack to **SurrealDB server v4** (verified `4.0.0`, docker image `surrealdb/surrealdb:v4.0.0`) with surrealdb.js `2.1.1` -> `2.2.2`. most of the surface is unaffected, the changes below are internal or removals
+
+| v0.2.x | v0.3.0 |
+| --- | --- |
+| `gql()` / `POST /surrealdb/gql` | **removed** — SurrealDB 4 dropped ISO GraphQL (parse error), use `query()` with SurrealQL instead |
+| `health()` via the SDK `health` rpc | internal: SurrealDB 4 removed the rpc, `health()` now probes with a `version()` round-trip (same signature, still throws when unreachable) |
+| `relate()` via the SDK `relate` rpc | internal: SurrealDB 4 broke the rpc argument marshalling, `relate()` now runs a SurrealQL `RELATE` with bindings (same signature, single and fan-out) |
+| SurrealQL `version()` function | gone in v4 — use the service `version()` (rpc), ex `{ version: "surrealdb-4.0.0" }` |
+
+notable server-side v4 changes for operators (see [NOTES.md](https://github.com/koakh/NestJsSurrealDbDynamicModule/blob/main/NOTES.md) for the full lessons): the `file://` storage scheme was removed (use `surrealkv://`), and docker images read credentials from the `SURREAL_USER` / `SURREAL_PASS` env names
+
+also new: `yarn app-lib:surface` (repo root) runs a PASS/FAIL surface test of the full service API against a live server — the server-migration acceptance gate
+
+full changelog at [CHANGELOG.md](https://github.com/koakh/NestJsSurrealDbDynamicModule/blob/main/packages/app-lib/CHANGELOG.md)
+
 ## Demo Application
 
 [`@koakh/nestjs-surrealdb-rest-demo`](https://github.com/koakh/NestJsSurrealDbDynamicModule/tree/main/packages/app-rst) (in the same monorepo, `packages/app-rst`) is a NestJS 11 REST consumer app that wires the module end-to-end (ConfigService + UserService, `SurrealDbController` enabled) and covers the full SDK v2 proxy surface over REST.
 
 ## Development
 
-the package lives in a yarn 4 workspaces monorepo, see the [root README](https://github.com/koakh/NestJsSurrealDbDynamicModule#readme) for the full dev environment (SurrealDB v3 docker stack, `--mode=skip-build` install rule, watch/dev loop and publish steps)
+the package lives in a yarn 4 workspaces monorepo, see the [root README](https://github.com/koakh/NestJsSurrealDbDynamicModule#readme) for the full dev environment (SurrealDB v4 docker stack, `--mode=skip-build` install rule, watch/dev loop and publish steps)
 
 ```shell
 $ cd packages/app-lib

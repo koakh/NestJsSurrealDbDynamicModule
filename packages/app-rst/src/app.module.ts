@@ -27,6 +27,14 @@ import { UserService } from './user/user.service';
         password: configService.get('surrealDbPassword'),
         // userServiceAbstract
         userService,
+        // set SURREALDB_INIT_SURREAL_DB=false to skip the connect on boot,
+        // SURREALDB_INIT_SURREAL_DB_THROW_ERROR=false to log-and-continue on boot errors
+        ...(configService.get('surrealDbInitSurrealDb') === 'false' ? { initSurrealDb: false } : {}),
+        ...(configService.get('surrealDbInitSurrealDbThrowError') === 'false' ? { initSurrealDbThrowError: false } : {}),
+        // set SURREALDB_CONTROLLER_GUARD_KEY to require `x-api-key` on every SurrealDbController endpoint
+        ...(configService.get('surrealDbControllerGuardKey')
+          ? { controllerGuard: (request: any) => request.headers['x-api-key'] === configService.get('surrealDbControllerGuardKey') }
+          : {}),
       }),
       // this is required else we have error
       // Nest can't resolve dependencies of the SurrealDbService (AUTH_MODULE_OPTIONS, ?). Please make sure that the argument APP_SERVICE at index [1] is available in the SurrealDbModule context.

@@ -20,11 +20,13 @@ services:
     # command: "node dist/main.js"
 
   nestjs-surrealdb-rest-surrealdb:
-    image: surrealdb/surrealdb:v3.1.6
+    image: surrealdb/surrealdb:v4.0.1
     hostname: surrealdb
     container_name: nestjs-surrealdb-rest-surrealdb
     restart: unless-stopped
     # file:mydb
+    # NOTE: the docker image CLI (even 4.0.x) does not ship the `db` subcommand tree,
+    # use the plain `start` form here; workstation scripts use the v4 `surreal db *` forms
     command: "start --user root --pass root"
     # uncomment to expose surrealdb port
     ports:

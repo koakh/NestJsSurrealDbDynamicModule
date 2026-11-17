@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, OnApplicationShutdown } from '@nestjs/common';
 import {
   AccessRecordAuth,
   AnyAuth,
@@ -48,7 +48,7 @@ export interface SelectOptions {
 }
 
 @Injectable()
-export class SurrealDbService {
+export class SurrealDbService implements OnApplicationShutdown {
   private db: Surreal;
 
   constructor(
@@ -59,6 +59,18 @@ export class SurrealDbService {
   ) {
     if (!options.initSurrealDb || !options.initSurrealDb === false) {
       this.initSurrealDb(options.initSurrealDbThrowError);
+    }
+  }
+
+  /**
+   * graceful shutdown: close the connection when the app terminates
+   * (requires `app.enableShutdownHooks()` in the consumer bootstrap)
+   */
+  async onApplicationShutdown(): Promise<void> {
+    if (this.db?.isConnected) {
+      await this.db.close().catch((error) => {
+        Logger.warn(`error closing SurrealDB connection on shutdown: ${error instanceof Error ? error.message : String(error)}`, SurrealDbService.name);
+      });
     }
   }
 
@@ -204,9 +216,15 @@ export class SurrealDbService {
   /**
    * Check the health of the connected SurrealDB instance
    * (v2 replacement for v1 `ping`)
+   *
+   * note: SurrealDB 4 removed the `health` rpc method, so this probes the
+   * server with a `version()` round-trip instead (throws when unreachable)
    */
   async health(): Promise<void> {
-    return await this.db.health();
+    if (!this.db.isConnected) {
+      throw new Error(`not connected (status: ${this.db.status})`);
+    }
+    await this.db.version();
   }
 
   /**
@@ -439,16 +457,6 @@ export class SurrealDbService {
   }
 
   /**
-   * Run an ISO GraphQL query against SurrealDB 3.x
-   * https://surrealdb.com/blog/surrealdb-3-0
-   * @param query - The GraphQL query
-   * @param bindings - Assigns variables which can be used in the query
-   */
-  async gql<R extends unknown[]>(query: string, bindings?: Record<string, unknown>): Promise<R> {
-    return await this.db.gql<R>(query, bindings) as unknown as R;
-  }
-
-  /**
    * Run a SurrealQL function
    * @param name - The full name of the function
    * @param args - The arguments supplied to the function. You can also supply a version here as a string, in which case the third argument becomes the parameter list.
@@ -559,6 +567,10 @@ export class SurrealDbService {
   /**
    * Create graph relationships (edges) between records.
    * Supports single or fan-out (`from`/`to` arrays) relations
+   *
+   * note: SurrealDB 4 broke the `relate` rpc argument marshalling
+   * (`Cannot execute RELATE statement where property 'out' is: ...`),
+   * so this runs a SurrealQL `RELATE` with bindings instead
    * @param from - The source record(s)
    * @param thing - The edge table name
    * @param to - The target record(s)
@@ -572,7 +584,13 @@ export class SurrealDbService {
   ): Promise<T | T[]> {
     const fromIds = Array.isArray(from) ? from.map((f) => new StringRecordId(f)) : new StringRecordId(from);
     const toIds = Array.isArray(to) ? to.map((t) => new StringRecordId(t)) : new StringRecordId(to);
-    return await this.db.relate<T>(fromIds as any, new Table(thing), toIds as any, data);
+    // identifiers can't be query bindings, quote the edge table name unless it's a plain identifier
+    const edge = /^[A-Za-z_][A-Za-z0-9_]*$/.test(thing) ? thing : `\`${thing.replace(/`/g, '``')}\``;
+    const hasData = data !== undefined;
+    const q = hasData ? `RELATE $from->${edge}->$to CONTENT $data` : `RELATE $from->${edge}->$to`;
+    const res = await this.query<any>(q, { from: fromIds, to: toIds, ...(hasData ? { data } : {}) });
+    // query() collects one result array per statement, RELATE is a single statement
+    return (Array.isArray(res) ? res[0] : res) as T | T[];
   }
 
   // live query methods

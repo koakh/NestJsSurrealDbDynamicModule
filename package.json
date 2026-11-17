@@ -5,16 +5,17 @@
   ],
   "scripts": {
     "surreal:docker": "cd packages/app-rst && docker compose up -d nestjs-surrealdb-rest-surrealdb && docker compose logs -f nestjs-surrealdb-rest-surrealdb",
-    "surreal": "surreal start --username root --password root --bind 0.0.0.0:8001 --log debug --allow-all rocksdb://database",
-    "surreal:install": "mkdir -p ${HOME}/.local/bin && curl -sSfL https://download.surrealdb.com/v${SURREAL_CLI_VERSION:-3.1.6}/surreal-v${SURREAL_CLI_VERSION:-3.1.6}.linux-amd64.tgz | tar -xz -C /tmp && mv /tmp/surreal ${HOME}/.local/bin/surreal && surreal version",
-    "surreal:initdb": "surreal import initdb.surql --endpoint http://localhost:${SURREALDB_PORT:-8001} --user root --pass root --ns test --db test",
-    "surreal:cli": "surreal sql --endpoint ws://localhost:${SURREALDB_PORT:-8001} --namespace test --database test --auth-level root --username root --password root",
-    "surreal:export": "surreal export --endpoint http://localhost:${SURREALDB_PORT:-8001} --user root --pass root --ns test --db test export.surql",
+    "surreal": "surreal db start --username root --password root --bind 0.0.0.0:8001 --log debug --allow-all rocksdb://database",
+    "surreal:install": "mkdir -p ${HOME}/.local/bin && curl -sSfL https://download.surrealdb.com/v${SURREAL_CLI_VERSION:-4.0.1}/surreal-v${SURREAL_CLI_VERSION:-4.0.1}.linux-amd64.tgz | tar -xz -C /tmp && mv /tmp/surreal ${HOME}/.local/bin/surreal && surreal db version",
+    "surreal:initdb": "surreal db import initdb.surql --endpoint http://localhost:${SURREALDB_PORT:-8001} --user root --pass root --ns test --db test",
+    "surreal:cli": "surreal db sql --endpoint ws://localhost:${SURREALDB_PORT:-8001} --namespace test --database test --auth-level root --username root --password root",
+    "surreal:export": "surreal db export --endpoint http://localhost:${SURREALDB_PORT:-8001} --user root --pass root --ns test --db test export.surql",
     "// workspace": "::::::::::::::::::::::::::::::::::::::::::::::::::::::::",
     "install": "yarn install",
     "// app-lib": "::::::::::::::::::::::::::::::::::::::::::::::::::::::::::",
     "app-lib:dev": "yarn --cwd packages/app-lib dev",
     "app-lib:build": "yarn --cwd packages/app-lib build",
+    "app-lib:surface": "yarn --cwd packages/app-lib surface",
     "app-lib:patch": "yarn --cwd packages/app-lib version:patch",
     "app-lib:publish": "yarn --cwd packages/app-lib version:publish",
     "// app-rst": "::::::::::::::::::::::::::::::::::::::::::::::::::::::::::",
@@ -25,5 +26,8 @@
     "docker:app-rst:down": "yarn --cwd packages/app-rst docker:down",
     "// end": ":::::::::::::::::::::::::::::::::::: ::::::::::::::::::::::::::"
   },
-  "packageManager": "yarn@4.5.3"
+  "packageManager": "yarn@4.5.3",
+  "resolutions": {
+    "jest-util": "^30.5.1"
+  }
 }

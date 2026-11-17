@@ -2,6 +2,7 @@ import { ConfigurableModuleBuilder, Global, Module } from '@nestjs/common';
 import { SURREALDB_MODULE_OPTIONS } from './surrealdb.constants';
 import { SurrealDbModuleOptions } from './surrealdb.interfaces';
 import { createNestSurrealDbModuleProviders } from './surrealdb.providers';
+import { SurrealDbControllerGuard } from './surrealdb.controller.guard';
 import { SurrealDbService } from './surrealdb.service';
 
 // official `@nestjs/common` replacement for `@golevelup/nestjs-modules` `createConfigurableDynamicRootModule`
@@ -23,10 +24,14 @@ export { MODULE_OPTIONS_TOKEN };
 @Module({
   providers: [
     SurrealDbService,
+    // registered here so `@UseGuards(SurrealDbControllerGuard)` resolves in any
+    // consumer module that declares `SurrealDbController` in its controllers
+    SurrealDbControllerGuard,
     ...createNestSurrealDbModuleProviders,
   ],
   exports: [
     SurrealDbService,
+    SurrealDbControllerGuard,
     ...createNestSurrealDbModuleProviders,
   ],
   controllers: [

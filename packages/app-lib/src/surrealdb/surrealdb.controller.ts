@@ -1,10 +1,11 @@
-import { All, Body, Controller, Delete, Get, Logger, Param, Patch, Post, Put, Query, Req } from '@nestjs/common';
+import { All, Body, Controller, Delete, Get, Logger, Param, Patch, Post, Put, Query, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import {
   SurrealTransaction,
   Features,
 } from 'surrealdb';
-import { AuthenticateDto, ConnectDto, DataDto, GqlDto, QueryDto, RelateDto, SetDto, SigninDto, SignupDto, UpdateDto, UseDto } from './dto';
+import { AuthenticateDto, ConnectDto, DataDto, QueryDto, RelateDto, SetDto, SigninDto, SignupDto, UnsetDto, UpdateDto, UseDto } from './dto';
+import { SurrealDbControllerGuard } from './surrealdb.controller.guard';
 import { SurrealDbService } from './surrealdb.service';
 
 /**
@@ -18,13 +19,24 @@ type LiveSubscriptionLike = {
   subscribe?: (callback: (action: unknown, result: unknown) => void) => unknown;
 };
 
-const liveCallback = (action, result) => {
-  // action can be: 'CREATE', 'UPDATE', 'DELETE' or 'CLOSE'
-  if (action === 'CLOSE') return;
-  Logger.log(`live action: ${JSON.stringify(action)}, result: ${JSON.stringify(result, undefined, 2)}`, SurrealDbController.name);
+const liveCallback = (event, legacyResult) => {
+  // SDK >= 2.2.x passes a single event object `{ action, recordId, value }`,
+  // older versions passed positional `(action, result)` — normalize both
+  const normalized = event !== null && typeof event === 'object' ? event : { action: event, result: legacyResult };
+  if (normalized.action === 'CLOSE') return;
+  Logger.log(`live action: ${JSON.stringify(normalized.action)}`, SurrealDbController.name);
 };
 
+/**
+ * drop `undefined`-valued keys: transformed DTO instances declare every optional
+ * property, and the SDK detects auth variants client-side with `in` checks
+ * (ex `'variables' in auth'`), so a present-but-undefined key misroutes the call
+ */
+const compact = (o: object): Record<string, unknown> =>
+  Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined));
+
 @Controller('surrealdb')
+@UseGuards(SurrealDbControllerGuard)
 export class SurrealDbController {
   private readonly liveSubscriptions = new Map<string, LiveSubscriptionLike>();
   private readonly transactions = new Map<string, SurrealTransaction>();
@@ -35,9 +47,12 @@ export class SurrealDbController {
 
   // connection
 
+  // note: whole-DTO params (no destructuring) are required for the global
+  // ValidationPipe to see the metatype and actually validate the body
+
   @Post('/connect')
-  async connect(@Body() { url }: ConnectDto) {
-    return await this.surrealDbService.connect(url);
+  async connect(@Body() connectDto: ConnectDto) {
+    return await this.surrealDbService.connect(connectDto.url);
   }
 
   @Post('/close')
@@ -88,8 +103,8 @@ export class SurrealDbController {
   }
 
   @Post('/use')
-  async use(@Body() { namespace, database }: UseDto) {
-    return await this.surrealDbService.use(namespace, database);
+  async use(@Body() useDto: UseDto) {
+    return await this.surrealDbService.use(useDto.namespace, useDto.database);
   }
 
   // events
@@ -162,9 +177,9 @@ export class SurrealDbController {
   }
 
   @Post('/transaction/:id/query')
-  async transactionQuery(@Param('id') id: string, @Body() { query, bindings }: QueryDto) {
+  async transactionQuery(@Param('id') id: string, @Body() queryDto: QueryDto) {
     const transaction = this.getTransaction(id);
-    return await transaction.query(query, bindings);
+    return await transaction.query(queryDto.query, queryDto.bindings);
   }
 
   @Post('/transaction/:id/commit')
@@ -194,13 +209,13 @@ export class SurrealDbController {
   // https://surrealdb.com/docs/reference/javascript/api/core/surreal-session#signup
   @Post('/signup')
   async signup(@Body() signupDto: SignupDto) {
-    return await this.surrealDbService.signup(signupDto as any);
+    return await this.surrealDbService.signup(compact(signupDto) as any);
   }
 
   // https://surrealdb.com/docs/reference/javascript/api/core/surreal-session#signin
   @Post('/signin')
   async signin(@Body() signinDto: SigninDto) {
-    return await this.surrealDbService.signin(signinDto as any);
+    return await this.surrealDbService.signin(compact(signinDto) as any);
   }
 
   @Post('/invalidate')
@@ -209,8 +224,8 @@ export class SurrealDbController {
   }
 
   @Post('/authenticate')
-  async authenticate(@Body() { token, refresh }: AuthenticateDto) {
-    return await this.surrealDbService.authenticate(refresh ? { access: token, refresh } : token);
+  async authenticate(@Body() authenticateDto: AuthenticateDto) {
+    return await this.surrealDbService.authenticate(authenticateDto.refresh ? { access: authenticateDto.token, refresh: authenticateDto.refresh } : authenticateDto.token);
   }
 
   // get the currently authenticated record user (v2 replacement for v1 `info`)
@@ -223,26 +238,20 @@ export class SurrealDbController {
 
   // v2 replacement for v1 `let`
   @Post('/set')
-  async set(@Body() { variable, value }: SetDto) {
-    return await this.surrealDbService.set(variable, value);
+  async set(@Body() setDto: SetDto) {
+    return await this.surrealDbService.set(setDto.variable, setDto.value);
   }
 
   @Post('/unset')
-  async unset(@Body() { variable }: { variable: string }) {
-    return await this.surrealDbService.unset(variable);
+  async unset(@Body() unsetDto: UnsetDto) {
+    return await this.surrealDbService.unset(unsetDto.variable);
   }
 
   // queries
 
   @Post('/query')
-  async query(@Body() { query, bindings, mode }: QueryDto) {
-    return await this.surrealDbService.query(query, bindings, mode);
-  }
-
-  // ISO GraphQL queries (SurrealDB 3.x only)
-  @Post('/gql')
-  async gql(@Body() { query, variables }: GqlDto) {
-    return await this.surrealDbService.gql(query, variables);
+  async query(@Body() queryDto: QueryDto) {
+    return await this.surrealDbService.query(queryDto.query, queryDto.bindings, queryDto.mode);
   }
 
   @Post('/run/:name')

@@ -1,6 +1,6 @@
 import { IsNotEmpty } from 'class-validator';
 
-export declare class DataDto {
+export class DataDto {
   @IsNotEmpty()
   data: any;
 }

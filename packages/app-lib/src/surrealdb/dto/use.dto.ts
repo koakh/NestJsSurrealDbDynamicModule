@@ -1,6 +1,6 @@
 import { IsString } from 'class-validator';
 
-export declare class UseDto {
+export class UseDto {
   @IsString()
   namespace: string;
 

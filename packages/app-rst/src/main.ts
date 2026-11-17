@@ -14,7 +14,13 @@ async function bootstrap() {
   const httpServerPort = configService.get<string>('httpServerPort');
   // middleware
   app.useGlobalFilters(new AllExceptionsFilter(AppHttpAdapter));
-  app.useGlobalPipes(new ValidationPipe());
+  app.useGlobalPipes(new ValidationPipe({
+    transform: true,          // auto-transform DTOs
+    whitelist: true,          // strip non-whitelisted properties
+    forbidNonWhitelisted: true, // throw on non-whitelisted properties
+  }));
+  // enable graceful shutdown hooks (SurrealDbService.onApplicationShutdown closes the connection)
+  app.enableShutdownHooks();
   // start server
   await app.listen(httpServerPort);
   Logger.log(`Application is running on: ${await app.getUrl()}`, context);
