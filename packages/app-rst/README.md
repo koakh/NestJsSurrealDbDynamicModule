@@ -33,6 +33,7 @@ all optional, defaults are built into [`src/config/configuration.ts`](src/config
 | `SURREALDB_INIT_SURREAL_DB` | - | set `false` to skip the connect on boot |
 | `SURREALDB_INIT_SURREAL_DB_THROW_ERROR` | - | set `false` to log-and-continue on boot errors |
 | `SURREALDB_CONTROLLER_GUARD_KEY` | - | when set, every `/surrealdb/*` endpoint requires the `x-api-key` header to match |
+| `PROCESS_GUARD` | enabled | `false` restores node's crash-fast default on unhandled errors (use under a supervisor) |
 
 ## Endpoints
 
