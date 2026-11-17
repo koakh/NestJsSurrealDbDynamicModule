@@ -6,7 +6,16 @@ export class AllExceptionsFilter implements ExceptionFilter {
   constructor(private readonly httpAdapterHost: HttpAdapterHost) { }
 
   catch(exception: unknown, host: ArgumentsHost): void {
-    Logger.error(exception, AllExceptionsFilter.name);
+    // expected HttpExceptions (4xx from validation and the error mappings) log
+    // as a compact one-liner — the stack is noise for handled flows; unexpected
+    // errors keep the full object + stack, that's where debugging needs it
+    if (exception instanceof HttpException) {
+      const response = exception.getResponse();
+      const extra = typeof response === 'object' ? ` ${JSON.stringify(response)}` : '';
+      Logger.error(`${exception.name}: ${exception.message}${extra}`, AllExceptionsFilter.name);
+    } else {
+      Logger.error(exception, AllExceptionsFilter.name);
+    }
     // In certain situations `httpAdapter` might not be available in the
     // constructor method, thus we should resolve it here.
     const { httpAdapter } = this.httpAdapterHost;
