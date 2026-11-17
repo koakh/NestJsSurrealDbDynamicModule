@@ -42,6 +42,109 @@ Content-Type: {{contentType}}
 
 ### ::::: EO app-rst :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
+### ::::: BO app-rst db showcase (DbController) ::::::::::::::::::::::::::::::::::::::::::::::::
+
+// record access auth flow (requires initdb `account` access)
+
+### postDbSignup
+// @name postDbSignup
+// record access signup -> Tokens { access, refresh? }
+// NOTE: `username` is UNIQUE (user.idx_username), re-running initdb wipes the db,
+// otherwise change the username between runs (a duplicate returns 409)
+
+POST {{uriDb}}/signup HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "username": "alex",
+  "password": "password",
+  "marketing": true,
+  "tags": ["rust", "golang", "javascript"]
+}
+
+### postDbSignin
+// @name postDbSignin
+// record access signin -> Tokens { access, refresh? }
+
+POST {{uriDb}}/signin HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "username": "alex",
+  "password": "password"
+}
+
+### postDbSignout
+// @name postDbSignout
+// invalidate the current session authentication (logout),
+// then restores the root system session so the demo keeps working
+
+POST {{uriDb}}/signout HTTP/1.1
+Content-Type: {{contentType}}
+
+### getDbAuth
+// @name getDbAuth
+// the authenticated record user ($auth), pass ?token= from signup/signin to authenticate first
+
+GET {{uriDb}}/auth?token={{postDbSignin.response.body.access}} HTTP/1.1
+Content-Type: {{contentType}}
+
+// user-defined functions
+
+### getDbGreet
+// @name getDbGreet
+// run fn::greet (defined by initdb.surql)
+
+GET {{uriDb}}/greet/mario HTTP/1.1
+Content-Type: {{contentType}}
+
+// CRUD with a nested validated DTO
+
+### postDbCreatePerson
+// @name postDbCreatePerson
+// create with a nested validated DTO (invalid bodies return 400)
+
+POST {{uriDb}}/person HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "title": "developer",
+  "name": { "first": "Mario", "last": "Monteiro" },
+  "marketing": true
+}
+
+### getDbPerson
+// @name getDbPerson
+// select person by id (from postDbCreatePerson response)
+
+GET {{uriDb}}/person/{{postDbCreatePerson.response.body.[0].id}} HTTP/1.1
+Content-Type: {{contentType}}
+
+// transactions
+
+### postDbTransactionDemo
+// @name postDbTransactionDemo
+// beginTransaction -> CREATE person -> commit, in one endpoint
+
+POST {{uriDb}}/transaction-demo HTTP/1.1
+Content-Type: {{contentType}}
+
+{
+  "title": "tx-person",
+  "name": { "first": "Trans", "last": "Action" }
+}
+
+// live queries
+
+### postDbLiveDemo
+// @name postDbLiveDemo
+// starts a live query, writes a record, captures the events, kills and returns everything
+
+POST {{uriDb}}/live-demo/live_person HTTP/1.1
+Content-Type: {{contentType}}
+
+### ::::: EO app-rst db showcase :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
 ### ::::: BO surrealdb.js v2 proxy methods (app-lib SurrealDbController) :::::::::::::::::::::
 
 // connection
@@ -374,17 +477,6 @@ Content-Type: application/json
 {
   "query": "SELECT * FROM person LIMIT 1",
   "mode": "responses"
-}
-
-### postGql
-// @name postGql
-// ISO GraphQL queries, SurrealDB 3.x only (requires server gql support)
-
-POST {{uriSurrealDb}}/gql
-Content-Type: application/json
-
-{
-  "query": "{ person { id } }"
 }
 
 ### postRun

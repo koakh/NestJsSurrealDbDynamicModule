@@ -1,6 +1,6 @@
 import { IsObject, IsOptional, IsString } from 'class-validator';
 
-export declare class SignupDto {
+export class SignupDto {
   // The namespace to sign up to
   @IsString()
   namespace: string;

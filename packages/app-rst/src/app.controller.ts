@@ -18,9 +18,10 @@ export class AppController {
   }
 
   // use passed config from consumerApp
+  // NOTE: password is redacted, this endpoint must never leak credentials
   @Get('config')
   getConfig(): SurrealDbModuleOptions {
-    return this.surrealDbService.getConfig();
+    return { ...this.surrealDbService.getConfig(), password: '***' };
   }
 
   // TODO: comment/uncomment to use/hide outside AppServiceAbstract

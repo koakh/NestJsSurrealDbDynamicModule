@@ -18,11 +18,18 @@ export class AllExceptionsFilter implements ExceptionFilter {
         ? exception.getStatus()
         : HttpStatus.INTERNAL_SERVER_ERROR;
 
+    // don't leak internal error details to clients on unexpected errors,
+    // full details are kept in the log above
+    const message =
+      exception instanceof HttpException
+        ? `${(exception as any)?.name} : ${(exception as any)?.message}`
+        : 'Internal server error';
+
     const responseBody = {
       statusCode: httpStatus,
       timestamp: new Date().toISOString(),
       path: httpAdapter.getRequestUrl(ctx.getRequest()),
-      message: `${(exception as any)?.name} : ${(exception as any)?.message}`,
+      message,
     };
 
     httpAdapter.reply(ctx.getResponse(), responseBody, httpStatus);

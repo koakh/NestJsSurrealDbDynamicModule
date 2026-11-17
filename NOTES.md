@@ -325,3 +325,41 @@ after this both commands works flawless `version:patch` and `version:publish`
 - v3 CLI renamed `--conn` to `--endpoint`; a v1 CLI refuses v3 servers outright (version range check). The official installer script builds a stale v1-era CDN URL (403) — download directly from `https://download.surrealdb.com/vX.Y.Z/surreal-vX.Y.Z.linux-amd64.tgz` (note the double `v`).
 - SDK v2 quirks: `upsert` must not pre-check existence; `run(name, args)` must never pass an explicit `undefined` version (breaks overload dispatch); `health()` rpc is not available over WS on v3.1.6 (fallback to connection status).
 - `closeSession()` on the primary session is equivalent to `close()` — kills the shared connection, auto-reconnect does not apply to deliberate closes.
+
+## SurrealDB 4 migration lessons (2026-11, server 3.1.6 -> 4.0.0 / SDK 2.1.1 -> 2.2.2)
+
+- SDK `connect()` credentials must be nested (`authentication: { username, password }`); passing them flat at the top level of the options is **silently ignored** and the session stays anonymous (only permission errors surface later, ex `INFO FOR DB` -> `Anonymous access not allowed`). the lib was already correct; raw-SDK probes were not.
+- SurrealDB 4 removed the `health` rpc (`Method not found` on SDK 2.1.1; SDK 2.2.2 makes `db.health()` a client-side check returning `undefined`). the service now probes with `version()` round-trip.
+- SurrealDB 4 broke the `relate` rpc argument marshalling (`Cannot execute RELATE statement where property 'out' is: 'follows'`), with both SDK 2.1.1 and 2.2.2. workaround: SurrealQL `RELATE $from->edge->$to CONTENT $data` with `StringRecordId` bindings — works for single and fan-out (array) targets.
+- ISO GraphQL is gone in v4 (`db.gql()` -> SurrealQL parse error `Unexpected token QUERY`), removed `gql()` / `POST /surrealdb/gql` from the lib.
+- the SurrealQL `version()` function is gone in v4 (parse error); the rpc `version()` still returns `{ version: "surrealdb-4.0.0" }`.
+- v4 removed the `file://` storage scheme (`The file:// scheme is no longer supported; use surrealkv:// instead`) — crashed a container started with `start file:/data.srdb`.
+- the official docker image reads env `SURREAL_USER` / `SURREAL_PASS` (plus `SURREAL_BIND`, `SURREAL_PATH`); app-style `SURREALDB_USERNAME` / `SURREALDB_PASSWORD` names are NOT read, and a v4 container started without credentials defines **no users at all** (every signin fails `InvalidAuth`, anonymous is denied).
+- HTTP basic auth to `/sql` failed even with correct credentials during testing; header auth (`SurrealDB-User`/`SurrealDB-Pass`) reached the query parser. the ws rpc path (what the SDK uses) is the reliable transport.
+- Nest `createApplicationContext` with `{ logger: false }` **silently `process.exit(1)`-s** on boot errors (ExceptionsZone DEFAULT_TEARDOWN); keep at least `logger: ['error', 'warn']` in scripts. also `require('reflect-metadata')` before importing the built lib from plain js, and don't assign the `@Module(...)` decorator return value (it returns undefined).
+- `DELETE <table> WHERE username STARTS WITH 'x'` was a v4 parse error (`Unexpected token an identifier, expected Eof`); `string::starts_with(username, 'x')` is the working form. `DELETE` removes records, not the table definition (use `DEFINE TABLE IF NOT EXISTS` in repeatable scripts).
+
+## Pre-publish audit lessons (2026-11, v0.3.0)
+
+- **`export declare class` + decorators compiles to an empty file** — `declare` tells tsc the class exists elsewhere, so nothing is emitted: no runtime class, no decorator metadata. every DTO in the lib was `declare` since v0.1.x, so **class-validator never ran**. fix: plain `export class`.
+- **destructured `@Body()` params kill ValidationPipe validation** — `@Body() { url }: ConnectDto` makes tsc emit `Object` as `design:paramtypes`, the pipe gets no metatype and skips validation/whitelist entirely. fix: whole-DTO params (`@Body() dto: ConnectDto` + `dto.url`).
+- app-rst `nest build` silent no-op variant: the stale-incremental gotcha also applies to `tsconfig.build.tsbuildinfo` (not just `tsconfig.tsbuildinfo`) — remove both with `dist`.
+- `pkill -f <pattern>` in a shell whose own command line contains the pattern kills the shell itself — kill by port (`ss -tlnp`) instead.
+
+## Dev-scripts boot failures (2026-11, v0.3.0)
+
+- `nest start` (ex `yarn start:dev`) with `nest-cli.json` `"deleteOutDir": true` **deletes `dist/` at startup**, but tsc `"incremental": true` keeps its state in `tsconfig.build.tsbuildinfo` next to the tsconfig (NOT in dist) — when the state says "up to date" the watch compile emits **zero files** and the spawned `node dist/main` dies with `MODULE_NOT_FOUND`. the same no-op hits plain `yarn build` after a manual `dist` deletion. fix: removed `"incremental": true` from both package tsconfigs (compile cost here is negligible) — plus `rm -f *.tsbuildinfo` when touching this.
+- `start:debug` connected to a dead endpoint because the local (gitignored) `packages/app-rst/.env` still pointed at an old stack — with `SURREALDB_INIT_SURREAL_DB_THROW_ERROR=false` now actually wired the app boots and retries in the background instead of crashing, which is the desired dev behavior.
+
+## v4 CLI command tree (2026-11)
+
+- SurrealDB 4 moved the whole CLI under the `db` subcommand: `surreal start|import|export|sql|version` -> `surreal db start|import|export|sql|version` (old forms still run but print deprecation warnings). **all flags are unchanged** (`--endpoint`, `--user`/`--pass` aliases, `--ns`/`--db` aliases, `--auth-level`).
+- new v4 CLI goodies: `surreal db is-ready` (server readiness probe) and `surreal db validate` (validate SurrealQL files).
+- `surreal db import <file>` takes the file as a **positional** argument (same as before), and auth also reads from env (`SURREAL_USER`, `SURREAL_PASS`, `SURREAL_NAMESPACE`, `SURREAL_DATABASE`).
+- **same tag, different CLI**: the `surrealdb/surrealdb:v4.0.1` docker image binary does NOT have the `db` subcommand tree, while the standalone 4.0.1 CLI from download.surrealdb.com does. consequence: docker compose keeps the plain `start` command (image-native), workstation scripts use the `surreal db *` forms — both verified working together.
+
+## Opaque record-access errors + idempotent initdb (2026-11, v0.3.0)
+
+- SurrealDB 4 wraps record access clause failures opaquely: a UNIQUE violation inside the SIGNUP clause surfaces as `The record access signup query failed` with no details (v3 showed the inner error). run the clause manually as a query to see the real cause, ex `Database index idx_username already contains a conflicting value in another record`.
+- `initdb.surql` now starts with `REMOVE DATABASE IF EXISTS test;` — **every `yarn surreal:initdb` run wipes the whole database** and re-imports the schema from scratch (fully idempotent: no leftover users violating `idx_username` on the next signup). verified working under `OPTION IMPORT` via both the SDK `import()` and the CLI `surreal db import`.
+- demo app: `/db/signup` maps the opaque failure to a **409 Conflict** with an explicit "username already taken" message (probes `user.idx_username` on failure), `/db/signin` maps failures to a plain **401** `invalid username or password`.

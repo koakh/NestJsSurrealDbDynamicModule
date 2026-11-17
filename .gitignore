@@ -36,6 +36,11 @@ database/
 /node_modules
 **/node_modules/**
 
+# npm lockfile (this is a yarn repo) and misc local artifacts
+package-lock.json
+history.txt
+descript.ion
+
 @temp-app-surrealdb-graphql/
 packages/app-rst/.env
 

@@ -1,3 +1,2 @@
-export * from './add-user.dto';
-export * from './create-person.dto';
-export * from './increment-user.dto';
+export * from './auth.dto';
+export * from './person.dto';

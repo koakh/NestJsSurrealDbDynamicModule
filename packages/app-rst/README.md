@@ -1,13 +1,14 @@
 # @koakh/nestjs-surrealdb-rest-demo
 
-REST consumer demo app for [`@koakh/nestjs-surrealdb`](https://www.npmjs.com/package/@koakh/nestjs-surrealdb) — wires the dynamic module end-to-end (ConfigService + `UserService` injection, opt-in `SurrealDbController`) and exposes the **full surrealdb.js v2 proxy surface over REST**.
+REST consumer demo app for [`@koakh/nestjs-surrealdb`](https://www.npmjs.com/package/@koakh/nestjs-surrealdb) — wires the dynamic module end-to-end (ConfigService + `UserService` injection, opt-in `SurrealDbController`, `controllerGuard`) and showcases the **full lib surface over REST**.
 
 - NestJS 11, port **3030**, resolves the lib as `workspace:^`
+- SurrealDB server **v4** baseline (verified `4.0.0`/`4.0.1`), surrealdb.js `^2.2.2`
 - part of the monorepo, see the [root README](../../README.md) for the full dev environment
 
 ## Run
 
-requires SurrealDB **v3** at `ws://127.0.0.1:8001/rpc` (see root README `yarn surreal:docker` + `yarn surreal:initdb`) and the lib watch build (`yarn app-lib:dev`), then from the repo root:
+requires SurrealDB **v4** with the initdb schema imported (root README: `yarn surreal:docker` + `yarn surreal:initdb`, or any v4 endpoint via env vars) and the lib watch build (`yarn app-lib:dev`), then from the repo root:
 
 ```shell
 $ yarn start:app-rst
@@ -19,16 +20,19 @@ $ yarn start:app-rst
 
 ## Environment Variables
 
-all optional, defaults are built into [`src/config/configuration.ts`](src/config/configuration.ts) for the default local stack (`.env.sample` points at an unrelated external stack):
+all optional, defaults are built into [`src/config/configuration.ts`](src/config/configuration.ts) for the default local stack:
 
-| variable | default |
-| --- | --- |
-| `HTTP_SERVER_PORT` | `3030` |
-| `SURREALDB_URL` | `ws://127.0.0.1:8001/rpc` |
-| `SURREALDB_NAMESPACE` | `test` |
-| `SURREALDB_DATABASE` | `test` |
-| `SURREALDB_USERNAME` | `root` |
-| `SURREALDB_PASSWORD` | `root` |
+| variable | default | description |
+| --- | --- | --- |
+| `HTTP_SERVER_PORT` | `3030` | REST app port |
+| `SURREALDB_URL` | `ws://127.0.0.1:8001/rpc` | SurrealDB RPC endpoint |
+| `SURREALDB_NAMESPACE` | `test` | namespace |
+| `SURREALDB_DATABASE` | `test` | database |
+| `SURREALDB_USERNAME` | `root` | system user |
+| `SURREALDB_PASSWORD` | `root` | system user password |
+| `SURREALDB_INIT_SURREAL_DB` | - | set `false` to skip the connect on boot |
+| `SURREALDB_INIT_SURREAL_DB_THROW_ERROR` | - | set `false` to log-and-continue on boot errors |
+| `SURREALDB_CONTROLLER_GUARD_KEY` | - | when set, every `/surrealdb/*` endpoint requires the `x-api-key` header to match |
 
 ## Endpoints
 
@@ -37,29 +41,52 @@ local demo endpoints:
 | endpoint | description |
 | --- | --- |
 | `GET /` | hello from the local `AppService` (`APP_SERVICE` token demo) |
-| `GET /config` | the resolved `SurrealDbModuleOptions` |
+| `GET /config` | the resolved `SurrealDbModuleOptions` (**password redacted**) |
 | `GET /user-service` | calls the consumer `UserService` through the lib (`getUserFindOneByField`) |
-| `GET /db/user-service` | same, from a feature module |
-| `GET /db/select/:thing` | feature-module select demo |
 
-plus the full lib proxy surface under `surrealdb/` (connection, sessions, transactions, import/export, auth, `query`/`gql`/`run`, user-defined APIs, live queries, CRUD) — see the [lib README controller table](../app-lib/README.md#opt-in-rest-controller) and try it with the ready-made root [`client.http`](../../client.http).
+showcase endpoints ([`src/db/db.controller.ts`](src/db/db.controller.ts)) — each one exercises a lib capability the way a real consumer would:
 
-> `signup`/`signin` require the `user` table and `account` record access method from the root `initdb.surql` (`yarn surreal:initdb`)
+| endpoint | showcases |
+| --- | --- |
+| `GET /db/user-service` | consumer `UserService` through the lib, from a feature module |
+| `GET /db/select/:thing` | feature-module select |
+| `POST /db/signup` `{username, password, marketing?, tags?}` | record-access **signup** (initdb `account`) → `Tokens` |
+| `POST /db/signin` `{username, password}` | record-access **signin** → `Tokens` |
+| `POST /db/signout` | **logout**: invalidate the session, then restore the root session so the demo keeps working |
+| `GET /db/auth?token=` | the authenticated record user (`$auth`), optional token authenticate |
+| `GET /db/greet/:name` | user-defined function `run('fn::greet')` |
+| `POST /db/person` `{title, name: {first, last}, marketing?}` | create with a **nested validated DTO** |
+| `GET /db/person/:id` | select by record id |
+| `POST /db/transaction-demo` | `beginTransaction` → query → `commit` in one call |
+| `POST /db/live-demo/:thing` | live query + write + **captured events** + kill, self-contained |
+
+plus the full lib proxy surface under `surrealdb/` (connection, sessions, transactions, import/export, auth, `query`/`run`, user-defined APIs, live queries, CRUD) — see the [lib README controller table](../app-lib/README.md#opt-in-rest-controller) and try everything with the ready-made root [`client.http`](../../client.http).
+
+> `signup`/`signin` and `fn::greet` require the `user` table, `account` record access method and `fn::greet` function from the root `initdb.surql` (`yarn surreal:initdb`)
 
 ## How it wires the lib
 
 the interesting bits (with the hard-won comments):
 
-- [`src/app.module.ts`](src/app.module.ts) — `SurrealDbModule.forRootAsync({...})` with `ConfigService` + `UserService` injection, `imports: [AppModule, UserModule]`, `APP_SERVICE` token provide/export, `SurrealDbController` in `controllers`
+- [`src/app.module.ts`](src/app.module.ts) — `SurrealDbModule.forRootAsync({...})` with `ConfigService` + `UserService` injection, `imports: [AppModule, UserModule]`, `APP_SERVICE` token provide/export, `SurrealDbController` in `controllers`, env-driven `controllerGuard`
 - [`src/user/user.service.ts`](src/user/user.service.ts) — consumer `UserServiceAbstract` implementation
 - [`src/db/db.module.ts`](src/db/db.module.ts) — feature module consuming the `@Global()` `SurrealDbService` without re-importing the module
+- [`src/main.ts`](src/main.ts) — `ValidationPipe` (`transform`/`whitelist`/`forbidNonWhitelisted`), `AllExceptionsFilter`, `enableShutdownHooks()`
 
 ## Test
 
 ```shell
-$ yarn test        # unit specs, scaffold-level, no DB needed
-$ yarn test:e2e    # boots the full AppModule, needs a running SurrealDB
+$ yarn test        # unit specs, no DB needed
+$ yarn test:e2e    # DB-backed e2e: boots the full AppModule against a live SurrealDB v4
 ```
+
+the e2e suite covers the hello/config-redaction endpoints, health/version, person CRUD + validation 400s, `fn::greet`, transaction demo, live-demo event capture, the record-access auth flow and the `controllerGuard` 403/200 differential. it points at the default local stack, override the target with the standard env vars:
+
+```shell
+$ SURREALDB_URL=ws://192.168.1.103:9001/rpc SURREALDB_PASSWORD=... yarn test:e2e
+```
+
+when no server is reachable the DB specs log a warning and run as skipped.
 
 ## Docker
 

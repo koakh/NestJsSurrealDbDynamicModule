@@ -1,7 +1,6 @@
 export * from './authenticate.dto';
 export * from './connect.dto';
 export * from './data.dto';
-export * from './gql.dto';
 export * from './query.dto';
 export * from './relate.dto';
 export * from './set.dto';

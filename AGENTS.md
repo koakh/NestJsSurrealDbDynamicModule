@@ -10,25 +10,32 @@ This file contains guidelines and commands for agentic coding agents working in 
 ```bash
 yarn install --mode=skip-build          # Install dependencies (ALWAYS use --mode=skip-build)
 yarn app-lib:dev                        # Run library in watch mode
+yarn app-lib:build                      # Build library (tsc)
+yarn app-lib:surface                    # Lib surface test vs live SurrealDB (PASS/FAIL matrix)
 yarn start:app-rst                      # Start REST consumer app
+yarn surreal:install                    # Install SurrealDB v4 CLI (into ~/.local/bin)
 yarn surreal:docker                     # Start SurrealDB via Docker Compose
-yarn surreal:docker:daemon              # Start SurrealDB in background
+yarn surreal                            # Start SurrealDB with local binary (rocksdb)
 yarn surreal:initdb                      # Initialize database schema
 yarn surreal:cli                        # Connect to SurrealDB CLI
+yarn surreal:export                     # Export database as SurrealQL
+yarn docker:app-rst:up                  # Start the whole docker stack (app + db)
+yarn docker:app-rst:down                # Stop the docker stack
+yarn app-lib:patch                      # Build + npm version patch
+yarn app-lib:publish                    # Publish to npm
 ```
 
 ### Package-Specific Commands
 
 #### packages/app-lib (Main Library)
 ```bash
-yarn dev                                # Watch mode for development
+yarn dev                                # Watch mode for development (tsc -w)
 yarn build                              # Build TypeScript (tsc)
-yarn lint                               # Run TSLint
-yarn test                               # Run all tests
-yarn test:watch                         # Run tests in watch mode
-yarn test:cov                           # Generate coverage report
-yarn test:e2e                           # End-to-end tests
+yarn lint                               # Run ESLint (flat config eslint.config.mjs, auto-fix)
+yarn format                             # Format with Prettier
 ```
+
+> NOTE: app-lib has no test suite — all tests (unit and e2e) live in app-rst
 
 #### packages/app-rst (REST Consumer App)
 ```bash
@@ -41,10 +48,13 @@ yarn lint                               # Run ESLint with auto-fix
 yarn test                               # Run Jest tests
 yarn test:watch                         # Watch tests
 yarn test:cov                           # Coverage report
-yarn test:e2e                           # End-to-end tests
+yarn test:e2e                           # End-to-end tests (needs a running SurrealDB)
 ```
 
 ### Running a Single Test
+
+run from `packages/app-rst` (the only package with jest):
+
 ```bash
 # Run a specific test file
 yarn test path/to/file.spec.ts
@@ -70,7 +80,9 @@ yarn test:debug path/to/file.spec.ts
 - **@Global() Decorator**: Used on `SurrealDbModule` to make it available globally without explicit imports
 - **Async Configuration**: Modules use `forRootAsync()` with `useFactory()` for configuration injection
 - **Provider Injection**: Custom providers use `@Inject(SYMBOL)` pattern for dependency resolution
-- **Export Strategy**: Library exports both `SurrealDbService` and `SurrealDbController` (controller commented by default)
+- **Export Strategy**: Library exports both `SurrealDbService` and `SurrealDbController`; the controller is opt-in (the consumer adds it to its own `controllers` array)
+- **Controller Security**: `SurrealDbControllerGuard` applies the opt-in `controllerGuard` module option to every controller endpoint (no guard configured = open)
+- **Shutdown**: `SurrealDbService` implements `OnApplicationShutdown` and closes the connection; consumers must call `app.enableShutdownHooks()`
 
 ### Dependency Flow
 ```
@@ -86,8 +98,8 @@ SurrealDb (external dependency)
 ## Code Style Guidelines
 
 ### TypeScript Configuration
-- Both packages use non-strict TypeScript (strict mode disabled)
-- Compiler options: commonjs modules, es2017 target
+- Both packages use non-strict TypeScript (strict-family checks disabled)
+- Compiler options: commonjs modules, es2022 target
 - Experimental decorators enabled
 - Declaration: true for library (for publishing)
 - Remove comments: true in builds
@@ -243,16 +255,17 @@ describe('AppController (e2e)', () => {
 
 ## SurrealDB Specific Patterns
 
+> v4 baseline (verified `4.0.0`): ISO GraphQL `gql()` is removed (server dropped it), `health()` probes via `version()` (server rpc removed), `relate()` runs SurrealQL `RELATE` with bindings (server rpc marshalling broken). the full surface is verified by `yarn app-lib:surface`.
+
 ### Connection Management
-- **Health Checks**: Always call `checkConnectionAndTryReconnect()` before database operations
-- **Auto-Reconnect**: Service automatically attempts reconnection on failure
+- **Health Checks**: Use `health()` (v2 replacement for v1 `ping`), plus `getStatus()` / `getIsConnected()`
+- **Auto-Reconnect**: Handled by the SDK v2 `reconnect` ConnectOptions — enabled by default with unlimited attempts and exponential backoff; namespace/database/authentication are restored automatically on reconnect
 - **Connection Options**: WebSocket URL with namespace, database, and auth credentials
+- **Lifecycle Events**: Subscribe via `subscribe('connected' | 'reconnecting' | ...)`
 
 ```ts
-async select<T>(thing: string) {
-  await this.checkConnectionAndTryReconnect();
-  return await this.db.select<T>(thing);
-}
+// connect-time reconnect defaults applied by the module
+reconnect: { enabled: true, attempts: -1, retryDelay: 1000, retryDelayMax: 30000, retryDelayMultiplier: 2 }
 ```
 
 ### Record ID Handling
@@ -272,9 +285,9 @@ async thingExists(thing: string): Promise<void> {
 
 ### CRUD Operations
 - Use `create()` to insert new records
-- Use `select()` to query records
-- Use `update()` to replace entire record
-- Use `merge()` to update partial fields
+- Use `select()` to query records (with optional `where`, `limit`, `start`, `fields`, `fetch` builder options)
+- Use `update()` to update records, with `mode: 'content' | 'merge' | 'patch'` (default `content` REPLACES the record data)
+- Use `upsert()` for create-or-update (same modes)
 - Use `delete()` to remove records
 - Use `query()` for custom SurrealQL
 
@@ -285,38 +298,42 @@ await this.surrealDbService.create('person', { name: 'John' });
 // Select
 const result = await this.surrealDbService.select('person:123');
 
-// Update
+// Update (replace)
 await this.surrealDbService.update('person:123', { name: 'Jane' });
 
-// Merge (partial update)
-await this.surrealDbService.merge('person:123', { age: 30 });
+// Update (merge partial fields)
+await this.surrealDbService.update('person:123', { age: 30 }, 'merge');
 ```
 
 ### Authentication
-- Use `signup()` for new user registration
+- Use `signup()` for new user registration (record access, requires `DEFINE ACCESS ... TYPE RECORD`)
 - Use `signin()` for user authentication
-- Use `authenticate()` with JWT token
+- Use `authenticate()` with a token
 - Use `invalidate()` to logout
+- Both `signup()` and `signin()` return `Tokens { access, refresh? }` (not a bare token string)
 
 ```ts
-const token = await this.surrealDbService.signup({
+const tokens = await this.surrealDbService.signup({
   namespace: 'test',
   database: 'test',
-  access: 'user_access',
-  variables: { email, password }
+  access: 'account',
+  variables: { username, password, marketing, tags }
 });
 ```
 
 ### Live Queries
-- Use `live()` to subscribe to table changes
-- Use `subscribeLive()` to add callbacks
-- Use `unSubscribeLive()` to remove callbacks
-- Use `kill()` to stop live queries
+- Use `live()` to start a live query on a table (or record); it returns a subscription
+- Subscribe via `subscription.subscribe((action, result) => ...)` or async-iterate the subscription
+- Use `subscription.kill()` (or `kill(uuid)`) to stop live queries
+- Use `liveOf(id)` to subscribe to an existing live query started elsewhere
 
 ```ts
-const uuid = await this.surrealDbService.live('person', (data) => {
-  console.log('Live update:', data);
+const subscription = await this.surrealDbService.live('person');
+subscription.subscribe((action, result) => {
+  console.log('Live update:', action, result); // 'CREATE' | 'UPDATE' | 'DELETE'
 });
+// ...later
+await subscription.kill();
 ```
 
 ### TypeScript Types
@@ -335,15 +352,20 @@ const uuid = await this.surrealDbService.live('person', (data) => {
 - Use TODO comments for future improvements
 
 ### Linting Rules
-- ESLint for app-rst (TypeScript ESLint + Prettier)
-- TSLint for app-lib
-- Disabled rules: `interface-name-prefix`, `explicit-function-return-type`, `no-explicit-any`
+- ESLint for both packages (TypeScript ESLint + Prettier)
+- app-lib uses ESLint 9 flat config (`eslint.config.mjs`)
 
 ### Global Pipes (main.ts)
 - `ValidationPipe` enabled globally
 - `transform: true` - auto-transform DTOs
 - `whitelist: true` - strip non-whitelisted properties
 - `forbidNonWhitelisted: true` - throw error for non-whitelisted properties
+- `app.enableShutdownHooks()` - required for the lib's graceful connection close
+
+### Security
+- `GET /config` in app-rst redacts the password before returning the module config
+- `ConnectDto.url` scheme allowlist blocks `file://` and arbitrary schemes
+- unexpected errors return a generic 500 message (details stay in logs)
 
 ### Publishing Library
 ```bash

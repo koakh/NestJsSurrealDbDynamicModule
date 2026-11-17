@@ -1,6 +1,0 @@
-app-gql	consumer app graphql
-app-lib	base lib
-app-lib-gql	graphql lib, extended base lib with graphql resolvers etc, WIP this will be to do in a near future that is re-use app-lib and extended it with graphql stuff
-app-rst	consumer app rest
-dataloader	dataloader
-tutorial-graphql	tutorial graphql

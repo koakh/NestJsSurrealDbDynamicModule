@@ -1,6 +1,6 @@
 import { IsIn, IsNotEmpty, IsOptional } from 'class-validator';
 
-export declare class UpdateDto {
+export class UpdateDto {
   // the document / record data, or a JSON Patch array when mode is `patch`
   @IsNotEmpty()
   data: any;

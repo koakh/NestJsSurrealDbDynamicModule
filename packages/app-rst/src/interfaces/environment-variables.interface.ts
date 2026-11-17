@@ -5,4 +5,7 @@ export interface EnvironmentVariables {
   surrealDbDatabase: string;
   surrealDbUsername: string;
   surrealDbPassword: string;
+  surrealDbControllerGuardKey?: string;
+  surrealDbInitSurrealDb?: string;
+  surrealDbInitSurrealDbThrowError?: string;
 }

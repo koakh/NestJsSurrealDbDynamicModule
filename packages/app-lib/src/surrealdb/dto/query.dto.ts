@@ -1,6 +1,6 @@
 import { IsIn, IsNotEmpty, IsObject, IsOptional, IsString } from 'class-validator';
 
-export declare class QueryDto {
+export class QueryDto {
   @IsString()
   @IsNotEmpty()
   query: string;

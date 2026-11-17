@@ -1,6 +1,6 @@
-import { IsJWT, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
-export declare class AuthenticateDto {
+export class AuthenticateDto {
   // the access token
   @IsString()
   @IsNotEmpty()

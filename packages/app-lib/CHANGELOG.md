@@ -1,5 +1,43 @@
 # Changelog
 
+## 0.3.0
+
+SurrealDB server migration release: verified against **`v4.0.0`** (docker `surrealdb/surrealdb:v4.0.0`), surrealdb.js `2.1.1` -> `2.2.2`. the full service surface is covered by a new PASS/FAIL surface test (`yarn app-lib:surface`), 28/28 green against a live v4 server.
+
+### Breaking
+
+- `gql()` and REST `POST /surrealdb/gql` removed: SurrealDB 4 dropped ISO GraphQL (server-side parse error) — use `query()` with SurrealQL instead
+- SurrealQL `version()` function no longer exists on the server: use the service `version()` (rpc, returns `{ version: "surrealdb-4.0.0" }`)
+
+### Changed
+
+- `health()` no longer calls the SDK `health` rpc (removed in v4): it now probes with a `version()` round-trip, same signature, still throws when unreachable
+- `relate()` no longer uses the SDK `relate` rpc (v4 broke its argument marshalling, `Cannot execute RELATE statement where property 'out' is: ...`): it runs a SurrealQL `RELATE $from->edge->$to [CONTENT $data]` with bindings instead (single and fan-out, same signature)
+- deps: `surrealdb` `^2.1.1` -> `^2.2.2`
+
+### Compatibility notes (operators)
+
+- the `file://` storage scheme is removed in v4, use `surrealkv://`
+- the docker image reads credentials from the `SURREAL_USER` / `SURREAL_PASS` env names (ex `SURREALDB_USERNAME` from app configs is not read by the image)
+- `initdb.surql` imports cleanly on v4 unchanged (`OPTION IMPORT;` still required, auto-prepended by `import()`)
+
+### Added
+
+- `yarn app-lib:surface` (repo root): boots the real `SurrealDbModule` and drives the full `SurrealDbService` public API against a live server with a PASS/FAIL matrix — the server-migration acceptance gate (env-configurable via `SURREALDB_URL` etc.)
+- opt-in `controllerGuard` module option + `SurrealDbControllerGuard`: a request guard applied to every `SurrealDbController` endpoint (default absent = open, back-compatible; `false` -> 403, throw any `HttpException` for custom responses)
+- graceful shutdown: `SurrealDbService` implements `OnApplicationShutdown` and closes the connection (requires `app.enableShutdownHooks()` in the consumer bootstrap)
+
+### Security / audit hardening
+
+- **DTO validation was silently dead since v0.1.x** — the DTOs were `export declare class` (compiles to an empty file, no runtime class) and controller params were destructured (`@Body() { url }: ConnectDto` emits `Object` as the paramtype, so the ValidationPipe never saw a metatype). fixed: real emitted DTO classes + whole-DTO `@Body()` params — validation, `whitelist` and `forbidNonWhitelisted` now actually run
+- `ConnectDto.url` validates the endpoint scheme against an allowlist (`ws`, `wss`, `http`, `https`, `mem`, `rocksdb`, `surrealkv`, `fdb`, `tikv`), blocking `file://` and arbitrary schemes
+- license fixed: package.json `UNLICENSED` -> `MIT` and the MIT `LICENSE` copyright holder corrected
+- demo app (app-rst): `GET /config` now redacts the password, `ValidationPipe` enforces `transform`/`whitelist`/`forbidNonWhitelisted`, unexpected errors return a generic 500 message (details stay in logs), Dockerfile base image `node:18-alpine` -> `node:22-alpine` (the lib requires Node >= 22)
+
+### Dependencies
+
+- `yalc` moved from dependencies to devDependencies (consumers no longer install it), unused devDependencies removed (`ts-node`, `tsc-watch`, `tsconfig-paths`, `nodemon`)
+
 ## 0.2.0
 
 BREAKING release: surrealdb.js `1.1.0` -> `2.1.1` (SurrealDB server `v2.0.0+`, verified against `v3.1.6`),

@@ -1,6 +1,6 @@
 import { IsArray, IsObject, IsOptional, IsString } from 'class-validator';
 
-export declare class RelateDto {
+export class RelateDto {
   @IsString()
   @IsOptional()
   from?: string;

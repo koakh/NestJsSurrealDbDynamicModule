@@ -1,6 +1,6 @@
 import { IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
 
-export declare class SigninDto {
+export class SigninDto {
   // system user credentials (root, namespace or database user)
   @IsString()
   @IsOptional()

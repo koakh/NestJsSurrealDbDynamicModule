@@ -1,6 +1,11 @@
--- SurrealDB 3.x requires this as the first statement of any import,
+-- SurrealDB 3.x/4.x requires this as the first statement of any import,
 -- it disables events, live queries and field processing for performance
 OPTION IMPORT;
+
+-- clean slate: this script is idempotent and ALWAYS wipes the whole database,
+-- re-running `yarn surreal:initdb` starts from a fresh db (ex no leftover users
+-- violating the unique idx_username on the next signup)
+REMOVE DATABASE IF EXISTS test;
 
 DEFINE NAMESPACE test;
 DEFINE DATABASE test;
