@@ -238,7 +238,18 @@ export class SurrealDbController {
 
   @Post('/authenticate')
   async authenticate(@Body() authenticateDto: AuthenticateDto) {
-    return await this.surrealDbService.authenticate(authenticateDto.refresh ? { access: authenticateDto.token, refresh: authenticateDto.refresh } : authenticateDto.token);
+    const token = authenticateDto.refresh
+      ? { access: authenticateDto.token, refresh: authenticateDto.refresh }
+      : authenticateDto.token;
+    try {
+      return await this.surrealDbService.authenticate(token);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (/problem with authentication/i.test(message)) {
+        throw new UnauthorizedException('token is invalid or expired');
+      }
+      throw error;
+    }
   }
 
   // get the currently authenticated record user (v2 replacement for v1 `info`)
