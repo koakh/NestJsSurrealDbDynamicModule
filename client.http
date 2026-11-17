@@ -425,12 +425,15 @@ Content-Type: application/json
 // @name postAuthenticate
 // authenticate the shared session from a token, ex after invalidate
 // (also the way to adopt a record user session from postSignIn tokens)
+// NOTE: access tokens live 15 MINUTES (initdb `DURATION FOR TOKEN 15m`),
+// re-run postSignIn before this if it ran a while ago — an invalid OR expired
+// token returns 401 (InvalidAuth)
 
 POST {{uriSurrealDb}}/authenticate
 Content-Type: application/json
 
 {
-  "token": "{{postSignIn.response.body.*.access}}"
+  "token": "{{postSignIn.response.body.access}}"
 }
 
 // session configuration
