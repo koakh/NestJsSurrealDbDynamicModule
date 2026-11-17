@@ -337,6 +337,7 @@ await surrealDb.sessions();    // list session uuids
 // switch namespace/database, session variables (v2 `set`/`unset` replace v1 `let`)
 await surrealDb.use('test', 'test');
 await surrealDb.set('minAge', 18);
+const minAge = await surrealDb.get<number>('minAge'); // read it back, null when unset
 await surrealDb.unset('minAge');
 
 // SurrealDB 3 user-defined API endpoints
@@ -370,7 +371,7 @@ export class AppModule {}
 | user-defined APIs | `ANY /surrealdb/api/*` (proxied to SurrealDB 3 `db.api()`) |
 | live queries | `POST /surrealdb/live/:thing` -> `{id}`, `POST /surrealdb/live-of/:id`, `DELETE /surrealdb/live/:id` |
 | data | `GET /surrealdb/select/:thing?where=&limit=&start=&fields=&fetch=`, `POST /surrealdb/create/:thing` `{data}`, `POST /surrealdb/insert/:thing` `{data}`, `PUT /surrealdb/update/:thing` `{data, mode}`, `PATCH /surrealdb/upsert/:thing` `{data, mode}`, `DELETE /surrealdb/delete/:thing`, `POST /surrealdb/relate/:thing` `{from|fromMany, to|toMany, data}` |
-| session vars | `POST /surrealdb/set` `{variable, value}`, `POST /surrealdb/unset` `{variable}` |
+| session vars | `POST /surrealdb/set` `{variable, value}`, `GET /surrealdb/get/:variable`, `POST /surrealdb/unset` `{variable}` |
 
 > the demo repo ships a ready-made [`client.http`](https://github.com/koakh/NestJsSurrealDbDynamicModule/blob/main/client.http) with requests covering the full surface
 

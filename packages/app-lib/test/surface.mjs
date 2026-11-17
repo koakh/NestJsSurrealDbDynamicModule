@@ -206,12 +206,14 @@ async function main() {
     return 'committed';
   });
 
-  await check('set/unset session variable', async () => {
-    await svc.set('surfaceVar', 42);
-    const res = await svc.query('RETURN $surfaceVar');
-    await svc.unset('surfaceVar');
-    assert(res?.[0] === 42, `unexpected: ${JSON.stringify(res)}`);
-    return '42';
+  await check('set/get/unset session variable', async () => {
+    await svc.set('migVar', 42);
+    const value = await svc.get('migVar');
+    await svc.unset('migVar');
+    const after = await svc.get('migVar');
+    assert(value === 42, `get after set: ${JSON.stringify(value)}`);
+    assert(after === null, `get after unset: ${JSON.stringify(after)}`);
+    return 'set -> 42, unset -> null';
   });
 
   let tokens;
