@@ -1,4 +1,4 @@
-import { All, Body, Controller, Delete, Get, Logger, Param, Patch, Post, Put, Query, Req, UseGuards } from '@nestjs/common';
+import { All, Body, ConflictException, Controller, Delete, Get, Logger, Param, Patch, Post, Put, Query, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import {
   SurrealTransaction,
@@ -204,13 +204,31 @@ export class SurrealDbController {
   // https://surrealdb.com/docs/reference/javascript/api/core/surreal-session#signup
   @Post('/signup')
   async signup(@Body() signupDto: SignupDto) {
-    return await this.surrealDbService.signup(compact(signupDto) as any);
+    try {
+      return await this.surrealDbService.signup(compact(signupDto) as any);
+    } catch (error) {
+      // SurrealDB 4 wraps record access clause failures opaquely, surface the common causes
+      if (/signup query failed/i.test(error instanceof Error ? error.message : String(error))) {
+        throw new ConflictException(
+          `record access signup query failed (access '${signupDto.access}'): a UNIQUE field is already taken (ex username), or the variables are missing/invalid for the access clause`,
+        );
+      }
+      throw error;
+    }
   }
 
   // https://surrealdb.com/docs/reference/javascript/api/core/surreal-session#signin
   @Post('/signin')
   async signin(@Body() signinDto: SigninDto) {
-    return await this.surrealDbService.signin(compact(signinDto) as any);
+    try {
+      return await this.surrealDbService.signin(compact(signinDto) as any);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (/problem with authentication|signin query failed/i.test(message)) {
+        throw new UnauthorizedException('invalid credentials or access configuration');
+      }
+      throw error;
+    }
   }
 
   @Post('/invalidate')
