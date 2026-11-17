@@ -158,12 +158,14 @@ Content-Type: {{contentType}}
 
 ### getStatus
 // @name getStatus
+// connection status: connecting | connected | reconnecting | disconnected | error
 
 GET {{uriSurrealDb}}/status HTTP/1.1
 Content-Type: {{contentType}}
 
 ### getIsConnected
 // @name getIsConnected
+// boolean shortcut for status === connected
 
 GET {{uriSurrealDb}}/is-connected HTTP/1.1
 Content-Type: {{contentType}}
@@ -177,13 +179,16 @@ Content-Type: {{contentType}}
 
 ### getVersion
 // @name getVersion
-// v2 returns { version: "surrealdb-3.1.6" }
+// rpc version, ex { "version": "surrealdb-4.0.1" }
+// (the SurrealQL version() FUNCTION is gone in v4, the rpc is the way)
 
 GET {{uriSurrealDb}}/version HTTP/1.1
 Content-Type: {{contentType}}
 
 ### postConnect
 // @name postConnect
+// rewire the SHARED connection to another endpoint (ex a second stack),
+// url scheme allowlist: ws|wss|http|https|mem|rocksdb|surrealkv|fdb|tikv
 
 POST {{uriSurrealDb}}/connect
 Content-Type: application/json
@@ -194,6 +199,8 @@ Content-Type: application/json
 
 ### postClose
 // @name postClose
+// closes the shared connection, all further db requests fail until
+// a new postConnect (auto-reconnect does not apply to deliberate closes)
 
 POST {{uriSurrealDb}}/close
 Content-Type: application/json
@@ -203,6 +210,7 @@ Content-Type: application/json
 
 ### postUse
 // @name postUse
+// switch the shared session to another namespace/database
 
 POST {{uriSurrealDb}}/use
 Content-Type: application/json
@@ -229,6 +237,7 @@ Content-Type: application/json
 
 ### getSessions
 // @name getSessions
+// isolated sessions created on the shared connection (own ns/db/vars/auth state)
 
 GET {{uriSurrealDb}}/sessions HTTP/1.1
 Content-Type: {{contentType}}
@@ -268,7 +277,7 @@ Content-Type: application/json
 
 ### postImport
 // @name postImport
-// SurrealDB 3 requires `OPTION IMPORT;` first, it's prepended automatically
+// SurrealDB v3+ requires `OPTION IMPORT;` first, it's prepended automatically
 
 POST {{uriSurrealDb}}/import
 Content-Type: application/json
@@ -307,9 +316,8 @@ Content-Type: application/json
 
 ### postTransactionQuery
 // @name postTransactionQuery
-// @transactionId = {{postTransactionBegin.response.body.*.id}}
 
-POST {{uriSurrealDb}}/transaction/ix7jc9h0nd/query
+POST {{uriSurrealDb}}/transaction/{{postTransactionBegin.response.body.id}}/query
 Content-Type: application/json
 
 {
@@ -319,7 +327,7 @@ Content-Type: application/json
 ### postTransactionCommit
 // @name postTransactionCommit
 
-POST {{uriSurrealDb}}/transaction/ix7jc9h0nd/commit
+POST {{uriSurrealDb}}/transaction/{{postTransactionBegin.response.body.id}}/commit
 Content-Type: application/json
 
 {
@@ -328,7 +336,7 @@ Content-Type: application/json
 ### postTransactionCancel
 // @name postTransactionCancel
 
-POST {{uriSurrealDb}}/transaction/ix7jc9h0nd/cancel
+POST {{uriSurrealDb}}/transaction/{{postTransactionBegin.response.body.id}}/cancel
 Content-Type: application/json
 
 {
@@ -340,6 +348,7 @@ Content-Type: application/json
 // @name postSignUp
 // SurrealDB 2.x+ record access, `initdb.surql` defines access `account`
 // NOTE: `username` is UNIQUE, a duplicate returns 409 (re-run initdb to wipe, or change it)
+// NOTE: signup ALSO authenticates the shared app session as the new record user
 
 POST {{uriSurrealDb}}/signup
 Content-Type: application/json
@@ -360,6 +369,8 @@ Content-Type: application/json
 // @name postSignIn
 // returns Tokens { access, refresh? }
 // record access user ex below, or system user { "username": "root", "password": "root" }
+// NOTE: this authenticates the SHARED app session (not per-request auth),
+// run postSignInRoot afterwards to restore admin permissions
 
 POST {{uriSurrealDb}}/signin
 Content-Type: application/json
@@ -377,6 +388,7 @@ Content-Type: application/json
 ### postSignInRoot
 // @name postSignInRoot
 // system user (root), restores admin permissions after a record user signin
+// adjust the credentials to your target stack (ex the .env values)
 
 POST {{uriSurrealDb}}/signin
 Content-Type: application/json
@@ -389,14 +401,19 @@ Content-Type: application/json
 ### getAuth
 // @name getAuth
 // v2 replacement for v1 `info`, `SELECT * FROM $auth`
-// first signin else response will be blank
+// returns the authenticated RECORD user (full user row), EMPTY when the session
+// is a system user (root, the app boot state) or anonymous — $auth only exists
+// for record users signed in through a DEFINE ACCESS ... TYPE RECORD.
+// run postSignUp or postSignIn first (they authenticate the shared session),
+// or use the friendlier GET /db/auth?token=<access> which reports the state
 
 GET {{uriSurrealDb}}/auth HTTP/1.1
 Content-Type: {{contentType}}
 
 ### postInvalidate
 // @name postInvalidate
-// invalidates current signIn user
+// invalidates the current session authentication, the session goes anonymous —
+// privileged calls fail until the next signin/signup/authenticate
 
 POST {{uriSurrealDb}}/invalidate
 Content-Type: application/json
@@ -406,7 +423,8 @@ Content-Type: application/json
 
 ### postAuthenticate
 // @name postAuthenticate
-// very useful to authenticate from a token, ex after invalidate
+// authenticate the shared session from a token, ex after invalidate
+// (also the way to adopt a record user session from postSignIn tokens)
 
 POST {{uriSurrealDb}}/authenticate
 Content-Type: application/json
@@ -489,6 +507,8 @@ Content-Type: application/json
 
 ### getApi
 // @name getApi
+// proxies to the server's user-defined API endpoints (`DEFINE API ...`),
+// requires one defined on the server, else expect an error
 
 GET {{uriSurrealDb}}/api/person HTTP/1.1
 Content-Type: {{contentType}}
@@ -510,7 +530,7 @@ Content-Type: application/json
 // @name postLiveOf
 // v2 replacement for v1 `subscribe-live`, subscribe to an existing live query id
 
-POST {{uriSurrealDb}}/live-of/4c40e576-87f6-40cb-8285-d44f72fe23b7
+POST {{uriSurrealDb}}/live-of/{{postLive.response.body.id}}
 Content-Type: application/json
 
 {
@@ -520,7 +540,7 @@ Content-Type: application/json
 // @name deleteLive
 // v2 replacement for v1 `kill`
 
-DELETE {{uriSurrealDb}}/live/4c40e576-87f6-40cb-8285-d44f72fe23b7 HTTP/1.1
+DELETE {{uriSurrealDb}}/live/{{postLive.response.body.id}} HTTP/1.1
 Content-Type: {{contentType}}
 
 // data methods
@@ -631,7 +651,8 @@ Content-Type: application/json
 
 ### postRelate
 // @name postRelate
-// single or fan-out (fromMany/toMany) relations, v2 sdk native relate
+// single or fan-out (fromMany/toMany) relations
+// implemented with a SurrealQL RELATE (v4 broke the sdk relate rpc marshalling)
 
 POST {{uriSurrealDb}}/relate/likes
 Content-Type: application/json
