@@ -486,7 +486,7 @@ Content-Type: application/json
 {
   "query": "select * from person where id = type::record($id)",
   "bindings": {
-    "id": "person:mario"
+    "id": "person:z0qapjrrofan52b4djor"
   }
 }
 
@@ -559,8 +559,9 @@ Content-Type: {{contentType}}
 ### getSelect
 // @name getSelect
 // optional builder params: ?where=&limit=&start=&fields=&fetch=
+// selecting a record id that does not exist returns 404
 
-GET {{uriSurrealDb}}/select/person:mario HTTP/1.1
+GET {{uriSurrealDb}}/select/person:z0qapjrrofan52b4djor HTTP/1.1
 Content-Type: application/json
 
 ### getSelectWithOptions
