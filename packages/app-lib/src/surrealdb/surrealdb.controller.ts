@@ -200,13 +200,18 @@ export class SurrealDbController {
   }
 
   /**
-   * map the service "Record not found" error (thrown by the thingExists
-   * pre-check on record id operations) to a proper 404 at the HTTP layer
+   * map known service errors to proper HTTP responses:
+   * - "Record not found" (the thingExists pre-check) -> 404
+   * - "already exists" (the server AlreadyExistsError, ex duplicate record id) -> 409
    */
-  private notFoundAs404<T>(promise: Promise<T>): Promise<T> {
+  private mapHttpErrors<T>(promise: Promise<T>): Promise<T> {
     return promise.catch((error) => {
-      if (error instanceof Error && /^Record not found:/i.test(error.message)) {
-        throw new NotFoundException(error.message);
+      const message = error instanceof Error ? error.message : String(error);
+      if (/^Record not found:/i.test(message)) {
+        throw new NotFoundException(message);
+      }
+      if (/already exists/i.test(message)) {
+        throw new ConflictException(message);
       }
       throw error;
     });
@@ -370,7 +375,7 @@ export class SurrealDbController {
     @Query('fields') fields?: string,
     @Query('fetch') fetch?: string,
   ) {
-    return this.notFoundAs404(this.surrealDbService.select(thing, {
+    return this.mapHttpErrors(this.surrealDbService.select(thing, {
       where,
       limit: limit !== undefined ? Number(limit) : undefined,
       start: start !== undefined ? Number(start) : undefined,
@@ -381,17 +386,17 @@ export class SurrealDbController {
 
   @Post('/create/:thing')
   async create(@Param('thing') thing: string, @Body() createDto: DataDto) {
-    return await this.surrealDbService.create(thing, createDto.data);
+    return this.mapHttpErrors(this.surrealDbService.create(thing, createDto.data));
   }
 
   @Post('/insert/:thing')
   async insert(@Param('thing') thing: string, @Body() insertDto: DataDto) {
-    return await this.surrealDbService.insert(thing, insertDto.data);
+    return this.mapHttpErrors(this.surrealDbService.insert(thing, insertDto.data));
   }
 
   @Put('/update/:thing')
   async update(@Param('thing') thing: string, @Body() updateDto: UpdateDto) {
-    return this.notFoundAs404(this.surrealDbService.update(thing, updateDto.data, updateDto.mode));
+    return this.mapHttpErrors(this.surrealDbService.update(thing, updateDto.data, updateDto.mode));
   }
 
   @Patch('/upsert/:thing')
@@ -401,7 +406,7 @@ export class SurrealDbController {
 
   @Delete('/delete/:thing')
   async delete(@Param('thing') thing: string) {
-    return this.notFoundAs404(this.surrealDbService.delete(thing));
+    return this.mapHttpErrors(this.surrealDbService.delete(thing));
   }
 
   @Post('/relate/:thing')

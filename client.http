@@ -573,6 +573,7 @@ Content-Type: application/json
 ### postCreate
 // @name postCreate
 // NOTE: if use id `tb:id` result will be object, if use id `tb` result will be array
+// creating a record id that already exists returns 409 (delete it first or use upsert)
 
 POST {{uriSurrealDb}}/create/person:mario
 Content-Type: application/json
