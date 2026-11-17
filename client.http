@@ -8,6 +8,9 @@
 
 @thing = person:mario
 @namespaceAndDatabase = test
+// adjust to your stack (defaults match the local docker compose `surreal:docker`)
+@systemUsername = root
+@systemPassword = root
 
 ### ::::: BO app-rst :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -394,8 +397,8 @@ POST {{uriSurrealDb}}/signin
 Content-Type: application/json
 
 {
-  "username": "root",
-  "password": "root"
+  "username": "{{systemUsername}}",
+  "password": "{{systemPassword}}"
 }
 
 ### getAuth
