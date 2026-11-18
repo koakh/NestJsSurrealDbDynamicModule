@@ -307,9 +307,10 @@ export class SurrealDbController {
     return await this.surrealDbService.run(name, runDto);
   }
 
-  // surrealdb 3 user defined APIs, proxies GET/POST/PUT/PATCH/DELETE to `db.api()`
+  // surrealdb 3+ user-defined APIs, proxies GET/POST/PUT/PATCH/DELETE to `db.api()`
+  // (named wildcard `*path`: the bare `*` form is legacy path-to-regexp syntax)
 
-  @All('/api/*')
+  @All('/api/*path')
   async api(@Req() req: Request) {
     const prefix = '/surrealdb/api';
     const path = req.path.slice(req.path.indexOf(prefix) + prefix.length) || '/';
