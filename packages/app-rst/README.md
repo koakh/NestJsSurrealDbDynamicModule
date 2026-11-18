@@ -25,6 +25,7 @@ all optional, defaults are built into [`src/config/configuration.ts`](src/config
 | variable | default | description |
 | --- | --- | --- |
 | `HTTP_SERVER_PORT` | `3030` | REST app port |
+| `HTTP_SERVER_HOST` | `0.0.0.0` | bind address (`0.0.0.0` required for docker port mapping) |
 | `SURREALDB_URL` | `ws://127.0.0.1:8001/rpc` | SurrealDB RPC endpoint |
 | `SURREALDB_NAMESPACE` | `test` | namespace |
 | `SURREALDB_DATABASE` | `test` | database |
@@ -97,4 +98,4 @@ $ yarn docker:up      # app + surrealdb v4 (persistent volume, initdb survives r
 $ yarn docker:down
 ```
 
-the image (`koakh/nestjs-surrealdb-rest-demo:0.3.0`) is a 2-stage build: corepack yarn 4 installs the workspace, builds app-lib then the app; the runner ships the dist artifacts + node_modules as non-root `node`. the app container reaches the db by service hostname (`ws://nestjs-surrealdb-rest-surrealdb:8000/rpc`) and boots tolerant (`SURREALDB_INIT_SURREAL_DB_THROW_ERROR=false`) while the db starts. no `.env` is baked into the image (root `.dockerignore`) — configure via compose `environment`.
+the image (`koakh/nestjs-surrealdb-rest-demo:0.3.0`) is a 2-stage build: corepack yarn 4 installs the workspace, builds app-lib then the app; the runner ships the dist artifacts + node_modules as non-root `node`. the app container reaches the db by service hostname (`ws://nestjs-surrealdb-rest-surrealdb:8000/rpc`) and boots tolerant (`SURREALDB_INIT_SURREAL_DB_THROW_ERROR=false`) while the db starts. no `.env` is baked into the image (root `.dockerignore`) — every compose value is overridable via `.env`/shell (`${VAR:-default}` substitution, including the db credentials through `SURREALDB_USERNAME`/`SURREALDB_PASSWORD`). note: the persistent volume keeps the root user from the first boot — changing the password later needs `docker compose down -v`.

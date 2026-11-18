@@ -24,6 +24,7 @@ async function bootstrap() {
   const configService = app.get<ConfigService>(ConfigService);
   // config vars
   const httpServerPort = configService.get<string>('httpServerPort');
+  const httpServerHost = configService.get<string>('httpServerHost');
   // middleware
   app.useGlobalFilters(new AllExceptionsFilter(AppHttpAdapter));
   app.useGlobalPipes(new ValidationPipe({
@@ -33,8 +34,8 @@ async function bootstrap() {
   }));
   // enable graceful shutdown hooks (SurrealDbService.onApplicationShutdown closes the connection)
   app.enableShutdownHooks();
-  // start server
-  await app.listen(httpServerPort);
+  // start server (bind all interfaces by default, required for docker port mapping)
+  await app.listen(httpServerPort, httpServerHost);
   Logger.log(`Application is running on: ${await app.getUrl()}`, context);
   Logger.log(`using surrealDb host: ${configService.get('surrealDbUrl')}`, context);
 }

@@ -5,20 +5,23 @@ services:
     container_name: nestjs-surrealdb-rest-demo
     restart: unless-stopped
     build:
-      # build from the repo root: the yarn workspace (and workspace:^ deps) must resolve
-      context: ..
+      # build from the REPO ROOT (two levels up from this compose file):
+      # the yarn workspace (and workspace:^ deps) must resolve
+      context: ../..
       dockerfile: packages/app-rst/Dockerfile
     depends_on:
       - nestjs-surrealdb-rest-surrealdb
-    # the app reaches the db by service hostname + CONTAINER port (not 127.0.0.1:8001,
-    # that would be the app container itself); THROW_ERROR=false lets the app boot
-    # while the db is still starting, the auto-reconnect picks it up
+    # every value overridable from .env / shell (compose variable substitution),
+    # defaults keep the demo stack working out of the box: the app reaches the db
+    # by service hostname + CONTAINER port (not 127.0.0.1:8001, that would be the
+    # app container itself); THROW_ERROR=false lets the app boot while the db is
+    # still starting, the auto-reconnect picks it up
     environment:
-      SURREALDB_URL: "ws://nestjs-surrealdb-rest-surrealdb:8000/rpc"
-      SURREALDB_NAMESPACE: "test"
-      SURREALDB_DATABASE: "test"
-      SURREALDB_USERNAME: "root"
-      SURREALDB_PASSWORD: "root"
+      SURREALDB_URL: "${SURREALDB_URL:-ws://nestjs-surrealdb-rest-surrealdb:8000/rpc}"
+      SURREALDB_NAMESPACE: "${SURREALDB_NAMESPACE:-test}"
+      SURREALDB_DATABASE: "${SURREALDB_DATABASE:-test}"
+      SURREALDB_USERNAME: "${SURREALDB_USERNAME:-root}"
+      SURREALDB_PASSWORD: "${SURREALDB_PASSWORD:-root}"
       SURREALDB_INIT_SURREAL_DB_THROW_ERROR: "false"
     ports:
       - 3030:3030
@@ -29,14 +32,15 @@ services:
     container_name: nestjs-surrealdb-rest-surrealdb
     restart: unless-stopped
     # credentials via the image env vars (mapped to --user/--pass): SURREAL_USER/
-    # SURREAL_PASS are the SERVER-side convention, the app connects with
-    # SURREALDB_USERNAME/SURREALDB_PASSWORD from its .env (see .env.sample note).
-    # SURREAL_PATH makes the storage persistent — without it the server is
-    # memory-backed and every container recreation wipes the schema
+    # SURREAL_PASS are the SERVER-side convention — fed from the same SURREALDB_USERNAME/
+    # SURREALDB_PASSWORD vars the app uses (compose reads them from .env / shell,
+    # defaults keep the local demo stack working out of the box).
+    # NOTE: the persistent volume keeps the root user from the FIRST boot — changing
+    # the password later needs a volume reset (`docker compose down -v`)
     command: start
     environment:
-      SURREAL_USER: root
-      SURREAL_PASS: root
+      SURREAL_USER: "${SURREALDB_USERNAME:-root}"
+      SURREAL_PASS: "${SURREALDB_PASSWORD:-root}"
       SURREAL_PATH: "surrealkv:///data/surreal"
     volumes:
       - surrealdb-data:/data
@@ -46,3 +50,4 @@ services:
 
 volumes:
   surrealdb-data:
+  
