@@ -47,14 +47,3 @@ DEFINE FUNCTION fn::greet($name: string) {
     RETURN "Hello, " + $name + "!";
 };
 -- RETURN fn::greet("Tobie");
-
--- graphql to generate audit fields
--- REMOVE TABLE IF EXISTS restaurant;
--- DEFINE TABLE restaurant SCHEMALESS PERMISSIONS NONE;
--- DEFINE FIELD createdAt ON restaurant VALUE time::now() READONLY;
--- DEFINE FIELD updatedAt ON restaurant VALUE time::now();
--- 
--- REMOVE TABLE IF EXISTS recipe;
--- DEFINE TABLE recipe SCHEMALESS PERMISSIONS NONE;
--- DEFINE FIELD createdAt ON recipe VALUE time::now() READONLY;
--- DEFINE FIELD updatedAt ON recipe VALUE time::now();

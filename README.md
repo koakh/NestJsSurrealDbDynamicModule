@@ -41,7 +41,8 @@ the single place to track what this stack runs on
 | --- | --- |
 | [`packages/app-lib`](packages/app-lib) | **`@koakh/nestjs-surrealdb`** — the published NestJS dynamic module (library): `SurrealDbService` proxying the full surrealdb.js v2 surface + opt-in `SurrealDbController` REST endpoints |
 | [`packages/app-rst`](packages/app-rst) | **`@koakh/nestjs-surrealdb-rest-demo`** — REST consumer demo app (NestJS 11, port 3030), wires the module end-to-end, showcases the lib capabilities over REST (auth flow, functions, nested-DTO CRUD, transactions, live queries, `controllerGuard`) and ships DB-backed e2e specs |
-| `packages-wip/` | `app-gql`, `app-lib-gql`, `dataloader`, `tutorial-graphql` — legacy GraphQL packages, **NOT part of the yarn workspace** (upgrade to surrealdb.js v2 pending; note the lib dropped ISO GraphQL `gql()` in v0.3.0, SurrealDB 4 removed it), kept frozen with their legacy READMEs |
+
+> history note: the legacy GraphQL packages (`app-gql`, `app-lib-gql`, `dataloader`, `tutorial-graphql`) were removed — the git tag `before-deprecate-graphql` preserves their last state
 
 ## Configure Dev Environment
 
@@ -359,6 +360,6 @@ also ready-made REST requests against the running app-rst covering the full SDK 
 ## More docs
 
 - [`TLDR.md`](TLDR.md) — quick-start command sequence
-- [`NOTES.md`](NOTES.md) — hard-won gotchas (DI/@Global, GraphQL generics, publish errors, SDK v2 + SurrealDB 4 migration lessons)
+- [`NOTES.md`](NOTES.md) — hard-won gotchas (DI/@Global, publish errors, SDK v2 + SurrealDB 4 migration lessons)
 - [`packages/app-lib/CHANGELOG.md`](packages/app-lib/CHANGELOG.md) — release changelog
 - [`AGENTS.md`](AGENTS.md) — repo instructions for AI coding agents

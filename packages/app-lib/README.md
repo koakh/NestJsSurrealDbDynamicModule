@@ -51,7 +51,7 @@
 
 - **Node >= 22** (SDK v2 uses the global `WebSocket`)
 - `@nestjs/common` **^11** (peer dependency) and `reflect-metadata` ^0.2
-- SurrealDB server — **v4 baseline**, verified against `4.0.0`/`4.0.1` (v3 servers also work, except ISO GraphQL which SurrealDB 4 removed and the lib dropped in v0.3.0)
+- SurrealDB server — **v4 baseline**, verified against `4.0.0`/`4.0.1` (v3 servers also work, except the features v4 removed — see the [migration guide](#migration-v02x---v030))
 
 ## Installation
 

@@ -255,7 +255,7 @@ describe('AppController (e2e)', () => {
 
 ## SurrealDB Specific Patterns
 
-> v4 baseline (verified `4.0.0`): ISO GraphQL `gql()` is removed (server dropped it), `health()` probes via `version()` (server rpc removed), `relate()` runs SurrealQL `RELATE` with bindings (server rpc marshalling broken), `exportModel()`/SurrealML removed (feature capped `< 4.0.0`). session variables have a full set/get/unset trio (`get(variable)` runs `RETURN $<variable>`). the full surface is verified by `yarn app-lib:surface`.
+> v4 baseline (verified `4.0.0`): `health()` probes via `version()` (server rpc removed), `relate()` runs SurrealQL `RELATE` with bindings (server rpc marshalling broken), `exportModel()`/SurrealML removed (feature capped `< 4.0.0`). session variables have a full set/get/unset trio (`get(variable)` runs `RETURN $<variable>`). the full surface is verified by `yarn app-lib:surface`.
 
 ### Connection Management
 - **Health Checks**: Use `health()` (v2 replacement for v1 `ping`), plus `getStatus()` / `getIsConnected()`

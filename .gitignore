@@ -44,7 +44,6 @@ descript.ion
 # local agent/editor temp folders
 .opencodeoldTemp/
 
-@temp-app-surrealdb-graphql/
 packages/app-rst/.env
 
 # tsc incremental build state
