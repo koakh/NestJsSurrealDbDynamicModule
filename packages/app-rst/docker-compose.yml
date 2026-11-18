@@ -24,10 +24,13 @@ services:
     hostname: surrealdb
     container_name: nestjs-surrealdb-rest-surrealdb
     restart: unless-stopped
-    # file:mydb
-    # NOTE: the docker image CLI (even 4.0.x) does not ship the `db` subcommand tree,
-    # use the plain `start` form here; workstation scripts use the v4 `surreal db *` forms
-    command: "start --user root --pass root"
+    # credentials via the image env vars (mapped to --user/--pass): SURREAL_USER/
+    # SURREAL_PASS are the SERVER-side convention, the app connects with
+    # SURREALDB_USERNAME/SURREALDB_PASSWORD from its .env (see .env.sample note)
+    command: start
+    environment:
+      SURREAL_USER: root
+      SURREAL_PASS: root
     # uncomment to expose surrealdb port
     ports:
       - 8001:8000
