@@ -1,5 +1,6 @@
 export interface EnvironmentVariables {
   httpServerPort: string;
+  httpServerHost: string;
   surrealDbUrl: string;
   surrealDbNamespace: string;
   surrealDbDatabase: string;

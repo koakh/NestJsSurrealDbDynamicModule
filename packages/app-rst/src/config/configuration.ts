@@ -2,6 +2,9 @@ import { EnvironmentVariables } from '../interfaces';
 
 export const configuration = (): EnvironmentVariables => ({
   httpServerPort: process.env.HTTP_SERVER_PORT || '3030',
+  // bind all interfaces by default so the port mapping works inside docker
+  // (binding only the loopback makes published container ports unreachable)
+  httpServerHost: process.env.HTTP_SERVER_HOST || '0.0.0.0',
   surrealDbUrl: process.env.SURREALDB_URL || 'ws://127.0.0.1:8001/rpc',
   surrealDbNamespace: process.env.SURREALDB_NAMESPACE || 'test',
   surrealDbDatabase: process.env.SURREALDB_DATABASE || 'test',
