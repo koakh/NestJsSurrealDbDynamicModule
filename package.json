@@ -5,7 +5,7 @@
   ],
   "scripts": {
     "surreal:docker": "cd packages/app-rst && docker compose up -d nestjs-surrealdb-rest-surrealdb && docker compose logs -f nestjs-surrealdb-rest-surrealdb",
-    "surreal": "surreal db start --username root --password root --bind 0.0.0.0:8001 --log debug --allow-all rocksdb://database",
+    "surreal": "surreal db start --username root --password root --bind 0.0.0.0:8001 --log debug --allow-all surrealkv://database",
     "surreal:install": "mkdir -p ${HOME}/.local/bin && curl -sSfL https://download.surrealdb.com/v${SURREAL_CLI_VERSION:-4.0.1}/surreal-v${SURREAL_CLI_VERSION:-4.0.1}.linux-amd64.tgz | tar -xz -C /tmp && mv /tmp/surreal ${HOME}/.local/bin/surreal && surreal db version",
     "surreal:initdb": "surreal db import initdb.surql --endpoint http://localhost:${SURREALDB_PORT:-8001} --user root --pass root --ns test --db test",
     "surreal:cli": "surreal db sql --endpoint ws://localhost:${SURREALDB_PORT:-8001} --namespace test --database test --auth-level root --username root --password root",
