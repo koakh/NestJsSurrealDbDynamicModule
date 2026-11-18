@@ -92,7 +92,9 @@ when no server is reachable the DB specs log a warning and run as skipped.
 ## Docker
 
 ```shell
-$ yarn docker:build
-$ yarn docker:up
+$ yarn docker:build   # builds from the REPO ROOT (the yarn workspace must resolve)
+$ yarn docker:up      # app + surrealdb v4 (persistent volume, initdb survives restarts)
 $ yarn docker:down
 ```
+
+the image (`koakh/nestjs-surrealdb-rest-demo:0.3.0`) is a 2-stage build: corepack yarn 4 installs the workspace, builds app-lib then the app; the runner ships the dist artifacts + node_modules as non-root `node`. the app container reaches the db by service hostname (`ws://nestjs-surrealdb-rest-surrealdb:8000/rpc`) and boots tolerant (`SURREALDB_INIT_SURREAL_DB_THROW_ERROR=false`) while the db starts. no `.env` is baked into the image (root `.dockerignore`) — configure via compose `environment`.

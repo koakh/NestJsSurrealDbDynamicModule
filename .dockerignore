@@ -1,0 +1,12 @@
+# keep the build context lean and secrets out of the image
+**/node_modules
+**/dist
+**/.env
+.git
+.yarn/cache
+.yarn/install-state.gz
+**/*.tsbuildinfo
+.bak
+packages-wip
+coverage
+*.log
