@@ -33,7 +33,7 @@ the single place to track what this stack runs on
 | NestJS | `11` |
 | Node | `>= 22` |
 
-> **roadmap**: migrated to SurrealDB server **v4** (see [Migration v0.2.x -> v0.3.0](packages/app-lib/README.md#migration-v02x---v030)) — the table above is the single place to track the stack versions
+> **roadmap**: migrated to SurrealDB server **v4** (see [Migration v0.2.x -> v0.3.0](packages/app-lib/README.md#migration-v02x---v030)) — the table above is the single place to track the stack versions. next majors parked for a **0.4.0** release: NestJS 12, TypeScript 7, ESLint 10
 
 ## Project Components
 
@@ -265,6 +265,11 @@ the consumer app resolves `@koakh/nestjs-surrealdb` as `workspace:^`, its nodemo
 | `SURREALDB_USERNAME` | `root` | system user (root/ns/db) |
 | `SURREALDB_PASSWORD` | `root` | system user password |
 | `HTTP_SERVER_PORT` | `3030` | REST app port |
+| `HTTP_SERVER_HOST` | `0.0.0.0` | bind address (`0.0.0.0` required for docker port mapping) |
+| `SURREALDB_INIT_SURREAL_DB` | - | set `false` to skip the connect on boot |
+| `SURREALDB_INIT_SURREAL_DB_THROW_ERROR` | - | set `false` to log-and-continue on boot errors |
+| `SURREALDB_CONTROLLER_GUARD_KEY` | - | when set, every `/surrealdb/*` endpoint requires the `x-api-key` header |
+| `PROCESS_GUARD` | enabled | `false` restores node's crash-fast default on unhandled errors |
 
 ```shell
 # or start the whole docker stack
