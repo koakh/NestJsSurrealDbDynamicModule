@@ -55,7 +55,7 @@ this project uses yarn workspaces, start by installing yarn and workspace depend
 
 ```shell
 $ node -v
-v22.14.0
+v26.13.0
 # enable corepack and use the project pinned version
 $ corepack enable
 $ yarn --version
@@ -108,7 +108,7 @@ first install the SurrealDB **v4** CLI (a v1 CLI refuses v3+ servers). full inst
 $ yarn surreal:install
 ```
 
-> NOTE: the official `curl -sSf https://install.surrealdb.com | sh` installer currently builds a stale v1-era CDN url (403). the repo script downloads directly from `https://download.surrealdb.com/v4.0.0/surreal-v4.0.0.linux-amd64.tgz` (note the double `v`)
+> NOTE: the official `curl -sSf https://install.surrealdb.com | sh` installer currently builds a stale v1-era CDN url (403). the repo script downloads directly from `https://download.surrealdb.com/v4.0.1/surreal-v4.0.1.linux-amd64.tgz` (note the double `v`)
 
 verify with `surreal version` — the local `surreal` CLI must be **v4** (a v1 CLI refuses v3+ servers)
 
@@ -121,7 +121,7 @@ verify with `surreal version` — the local `surreal` CLI must be **v4** (a v1 C
 # port 8000 is taken on this machine by the honcho stack)
 $ yarn surreal:docker
 
-# or start with the local binary and rocksdb
+# or start with the local binary and surrealkv (v4's native on-disk engine)
 $ yarn surreal
 ```
 
@@ -138,11 +138,11 @@ Y88b.                                                 888 888    888 888  .88P
 Y88b  d88P Y88b 888 888     888     Y8b.     888  888 888 888  .d88P 888   d88P
  'Y8888P'   'Y88888 888     888      'Y8888  'Y888888 888 8888888P'  8888888P'
 
-2026-10-15T11:47:45.498218Z  INFO surreal::env: Running 4.0.1 for linux on x86_64
-2026-10-15T11:47:45.499027Z  INFO surrealdb::core::kvs::ds: Starting kvs store at rocksdb://database
-2026-10-15T11:47:45.546100Z  INFO surrealdb::core::kvs::ds: Started kvs store at rocksdb://database
-2026-10-15T11:47:45.554246Z  INFO surreal::net: Listening for a system shutdown signal.
-2026-10-15T11:47:45.554092Z  INFO surreal::net: Started web server on 0.0.0.0:8001
+2026-11-18T12:46:23.482858Z  INFO surrealdb_server::env: Running 4.0.1 for linux on x86_64
+2026-11-18T12:46:23.483000Z  INFO surrealdb::core::kvs::ds: Starting kvs store at surrealkv://database
+2026-11-18T12:46:23.490000Z  INFO surrealdb::core::kvs::ds: Started kvs store at surrealkv://database
+2026-11-18T12:46:23.491000Z  INFO surrealdb_server::cli::start: Startup complete; instance is now ready to serve
+2026-11-18T12:46:23.492494Z  INFO surreal::net: Started web server on 0.0.0.0:8001
 ```
 
 </details>
@@ -151,13 +151,13 @@ all root `surreal:*` scripts default to `${SURREALDB_PORT:-8001}`
 
 ### Init surrealDb Database
 
-import the `initdb.surql` (defines the schemafull `user` table, the `account` record access method and a `fn::greet` test function — required for the `signup`/`signin` endpoints)
+import the `initdb.surql` (defines the schemafull `user` table, the `account` record access method and a `fn::greet` test function — required for the `signup`/`signin` endpoints). **every run wipes the whole database first** (`REMOVE DATABASE`) and re-imports from scratch — fully idempotent, no leftover users
 
 ```shell
 # import schemafull
 $ yarn surreal:initdb
 # outcome
-[2026-10-15 23:07:01] INFO  surrealdb::cli The SQL file was imported successfully
+2026-11-18T12:46:28.483295Z  INFO surrealdb_server::cli::import: Import executed with no errors
 ```
 
 verify the schema with the v3+ CLI (note: v3+ CLI uses `--endpoint`, v1 used `--conn`)
@@ -272,18 +272,15 @@ the consumer app resolves `@koakh/nestjs-surrealdb` as `workspace:^`, its nodemo
 | `PROCESS_GUARD` | enabled | `false` restores node's crash-fast default on unhandled errors |
 
 ```shell
-# or start the whole docker stack
+# or start the whole docker stack (image builds from the repo root, db keeps a
+# persistent surrealkv volume — every value overridable via .env, see packages/app-rst/README.md)
 $ yarn docker:app-rst:up
 $ yarn docker:app-rst:down
 ```
 
-### Launch GraphQL Consumer App / Tutorial App
-
-moved to `packages-wip/` (not in the workspace, pending surrealdb.js v2 upgrade) — see `packages-wip/` for their legacy READMEs
-
 ## Test and Lint
 
-- unit specs exist only in app-rst (scaffold-level, no DB needed):
+- unit specs live in app-rst (controller/service wiring, no DB needed):
 
 ```shell
 $ cd packages/app-rst
@@ -328,12 +325,16 @@ SurrealDbModule.forRoot({
 
 - the demo app's `GET /config` endpoint returns the module config with the **password redacted** (`***`) — keep it that way
 - the `ConnectDto.url` endpoint scheme is validated against an allowlist (`ws`, `wss`, `http`, `https`, `mem`, `rocksdb`, `surrealkv`, `fdb`, `tikv`), blocking `file://` and arbitrary schemes
-- the demo app enforces `ValidationPipe({ transform, whitelist, forbidNonWhitelisted })` and returns generic `500` messages (details stay in logs) — copy those patterns into real consumers
-- docker compose ships hardcoded `root/root` credentials — demo only, override for anything else
+- the demo app enforces `ValidationPipe({ transform, whitelist, forbidNonWhitelisted })` and returns generic `500` messages (details stay in logs; expected 4xx log as compact one-liners) — copy those patterns into real consumers
+- docker compose credentials default to `root/root` and are overridable from `.env` (`${SURREALDB_USERNAME:-root}` substitution feeds both the app and the server container) — demo only, override for anything else
 
 ## Publishing app-lib
 
 ```shell
+# test the artifact in a real consumer first (ex c3-backend)
+$ cd packages/app-lib
+$ corepack yarn yalc:publish
+
 # build + npm version patch
 $ yarn app-lib:patch
 # then bump the version in consumer apps and
@@ -347,7 +348,7 @@ $ yarn app-lib:publish
 
 ## Package Documentation
 
-the complete package documentation (what it is, install, `forRoot`/`forRootAsync`, options, service API, opt-in REST controller, exported types, v0.1.x -> v0.2.0 migration) lives in the published package README:
+the complete package documentation (what it is, install, `forRoot`/`forRootAsync`, options, service API, opt-in REST controller, exported types, migrations v0.1.x -> v0.2.0 and v0.2.x -> v0.3.0) lives in the published package README:
 
 - [`packages/app-lib/README.md`](packages/app-lib/README.md)
 
@@ -358,6 +359,6 @@ also ready-made REST requests against the running app-rst covering the full SDK 
 ## More docs
 
 - [`TLDR.md`](TLDR.md) — quick-start command sequence
-- [`NOTES.md`](NOTES.md) — hard-won gotchas (DI/@Global, GraphQL generics, publish errors, SDK v2 migration lessons)
+- [`NOTES.md`](NOTES.md) — hard-won gotchas (DI/@Global, GraphQL generics, publish errors, SDK v2 + SurrealDB 4 migration lessons)
 - [`packages/app-lib/CHANGELOG.md`](packages/app-lib/CHANGELOG.md) — release changelog
 - [`AGENTS.md`](AGENTS.md) — repo instructions for AI coding agents
