@@ -41,6 +41,9 @@ package-lock.json
 history.txt
 descript.ion
 
+# local agent/editor temp folders
+.opencodeoldTemp/
+
 @temp-app-surrealdb-graphql/
 packages/app-rst/.env
 
